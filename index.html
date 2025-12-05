@@ -1,0 +1,45 @@
+<html>
+<head>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+</head>
+
+<body>
+<a-scene renderer="colorManagement: true">
+
+    <a-assets>
+        <a-asset-item id="treeModel" src="Assests/tree.glb"></a-asset-item>
+        <a-asset-item id="houseModel" src="Assests/asian_big_house.glb"></a-asset-item>
+    </a-assets>
+
+    <a-entity gltf-model="#treeModel" position="-10 -5 -40" rotation="0 0 0"
+              scale="0.7 1 0.7"></a-entity>
+
+    <a-entity gltf-model="#houseModel" position="10 -6 -60" rotation="0 0 0"
+              scale="3 3 3"></a-entity>
+
+    <a-plane src="Assests/ground.jpg" position="0 -5 -53" rotation="-90 0 0"
+             width="150" height="100" material="repeat: 10 15"></a-plane>
+
+    <a-sky src="Assests/cloud-blue-sky-background.jpg"
+           material="repeat: 0.52 0.68" geometry="radius: 500"></a-sky>
+
+    <!-- ⭐ VR LOCOMOTION CAMERA RIG -->
+    <a-entity id="rig" movement-controls="fly: true; speed: 0.15">
+
+        <a-entity camera look-controls position="0 1.6 0"></a-entity>
+
+        <a-entity id="rightHand"
+                  oculus-touch-controls="hand: right"
+                  laser-controls="hand: right">
+        </a-entity>
+
+        <a-entity id="leftHand"
+                  oculus-touch-controls="hand: left"
+                  laser-controls="hand: left">
+        </a-entity>
+
+    </a-entity>
+
+</a-scene>
+</body>
+</html>
