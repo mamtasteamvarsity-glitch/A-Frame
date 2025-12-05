@@ -1,19 +1,71 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Quest Movement Test</title>
+    <title>Quest Thumbstick Movement</title>
 
     <!-- A-Frame core -->
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
-    <!-- A-Frame Extras (for movement-controls) -->
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
+    <!-- Custom component for thumbstick movement -->
+    <script>
+      AFRAME.registerComponent('thumbstick-move', {
+        schema: {
+          speed: {type: 'number', default: 3}  // movement units per second
+        },
+
+        init: function () {
+          this.direction = new THREE.Vector2(0, 0);
+          this.rig = document.querySelector('#rig');
+          this.head = document.querySelector('#head');
+
+          // Listen to thumbstick events from this controller
+          this.el.addEventListener('thumbstickmoved', (evt) => {
+            const x = evt.detail.x; // left/right
+            const y = evt.detail.y; // forward/back
+
+            // Small deadzone so it stops cleanly
+            if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) {
+              this.direction.set(0, 0);
+            } else {
+              this.direction.set(x, y);
+            }
+          });
+        },
+
+        tick: function (time, delta) {
+          if (!this.rig || !this.head) return;
+          if (this.direction.lengthSq() === 0) return;
+
+          const dt = delta / 1000;
+          const speed = this.data.speed;
+
+          // Get forward direction from head (camera)
+          const headObj = this.head.object3D;
+          const forward = new THREE.Vector3(0, 0, -1);
+          forward.applyQuaternion(headObj.quaternion);
+          forward.y = 0;          // flatten to ground
+          forward.normalize();
+
+          const right = new THREE.Vector3().crossVectors(
+            forward,
+            new THREE.Vector3(0, 1, 0)
+          ).normalize();
+
+          const move = new THREE.Vector3();
+
+          // Thumbstick: x = left/right, y = forward/back (note: y is inverted)
+          move.addScaledVector(forward, -this.direction.y * speed * dt);
+          move.addScaledVector(right, this.direction.x * speed * dt);
+
+          this.rig.object3D.position.add(move);
+        }
+      });
+    </script>
   </head>
 
   <body>
     <a-scene renderer="colorManagement: true; physicallyCorrectLights: true">
       <a-assets>
-        <!-- ⚠️ Check spelling: folder name should really be "Assets", not "Assests" -->
         <a-asset-item id="treeModel" src="Assests/tree.glb"></a-asset-item>
         <a-asset-item id="houseModel" src="Assests/asian_big_house.glb"></a-asset-item>
       </a-assets>
@@ -46,16 +98,13 @@
              geometry="radius: 500">
       </a-sky>
 
-      <!-- ⭐ CAMERA RIG with Quest movement -->
-      <a-entity id="rig"
-                movement-controls="fly: false; speed: 0.15">
-        
+      <!-- ⭐ CAMERA RIG  -->
+      <a-entity id="rig" position="9.5 0 -32.6">
         <!-- Head / camera -->
         <a-entity id="head"
                   camera
                   look-controls
-                  wasd-controls="enabled: true"
-                  position="9.5 1.6 -32.6">
+                  position="0 1.6 0">
         </a-entity>
 
         <!-- Left hand controller -->
@@ -63,9 +112,10 @@
                   oculus-touch-controls="hand: left">
         </a-entity>
 
-        <!-- Right hand controller -->
+        <!-- Right hand controller (moves the rig with thumbstick) -->
         <a-entity id="rightHand"
-                  oculus-touch-controls="hand: right">
+                  oculus-touch-controls="hand: right"
+                  thumbstick-move="speed: 3">
         </a-entity>
       </a-entity>
     </a-scene>
