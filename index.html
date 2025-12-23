@@ -1,123 +1,203 @@
 <html>
-  <head>
+
+<head>
     <meta charset="utf-8">
-    <title>Quest Thumbstick Movement</title>
+    <title>Hybrid Movement (Keyboard + Quest)</title>
 
     <!-- A-Frame core -->
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
-    <!-- Custom component for thumbstick movement -->
+    <!-- A-Frame Extras (for movement-controls: keyboard, gamepad, etc.) -->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
+
+    <!-- Custom component: Quest right thumbstick moves the rig -->
     <script>
-      AFRAME.registerComponent('thumbstick-move', {
-        schema: {
-          speed: {type: 'number', default: 3}  // movement units per second
-        },
+        AFRAME.registerComponent('thumbstick-move', {
+            schema: {
+                speed: { type: 'number', default: 3 }  // movement units per second
+            },
 
-        init: function () {
-          this.direction = new THREE.Vector2(0, 0);
-          this.rig = document.querySelector('#rig');
-          this.head = document.querySelector('#head');
+            init: function () {
+                this.direction = new THREE.Vector2(0, 0);
+                this.rig = document.querySelector('#rig');
+                this.head = document.querySelector('#head');
 
-          // Listen to thumbstick events from this controller
-          this.el.addEventListener('thumbstickmoved', (evt) => {
-            const x = evt.detail.x; // left/right
-            const y = evt.detail.y; // forward/back
+                // Listen to thumbstick from this controller (right hand)
+                this.el.addEventListener('thumbstickmoved', (evt) => {
+                    const x = evt.detail.x; // left/right
+                    const y = evt.detail.y; // forward/back
 
-            // Small deadzone so it stops cleanly
-            if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) {
-              this.direction.set(0, 0);
-            } else {
-              this.direction.set(x, y);
+                    // Apply a small deadzone so it stops cleanly
+                    if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) {
+                        this.direction.set(0, 0);
+                    } else {
+                        this.direction.set(x, y);
+                    }
+                });
+            },
+
+            tick: function (time, delta) {
+                if (!this.rig || !this.head) return;
+                if (this.direction.lengthSq() === 0) return;
+
+                const dt = delta / 1000;
+                const speed = this.data.speed;
+
+                // Get forward direction from head (camera)
+                const headObj = this.head.object3D;
+                const forward = new THREE.Vector3(0, 0, -1);
+                forward.applyQuaternion(headObj.quaternion);
+                forward.y = 0;          // keep movement on ground only
+                forward.normalize();
+
+                const right = new THREE.Vector3().crossVectors(
+                    forward,
+                    new THREE.Vector3(0, 1, 0)
+                ).normalize();
+
+                const move = new THREE.Vector3();
+
+                // Thumbstick: x = left/right, y = forward/back (note: y is inverted)
+                move.addScaledVector(forward, -this.direction.y * speed * dt);
+                move.addScaledVector(right, this.direction.x * speed * dt);
+
+                this.rig.object3D.position.add(move);
             }
-          });
-        },
-
-        tick: function (time, delta) {
-          if (!this.rig || !this.head) return;
-          if (this.direction.lengthSq() === 0) return;
-
-          const dt = delta / 1000;
-          const speed = this.data.speed;
-
-          // Get forward direction from head (camera)
-          const headObj = this.head.object3D;
-          const forward = new THREE.Vector3(0, 0, -1);
-          forward.applyQuaternion(headObj.quaternion);
-          forward.y = 0;          // flatten to ground
-          forward.normalize();
-
-          const right = new THREE.Vector3().crossVectors(
-            forward,
-            new THREE.Vector3(0, 1, 0)
-          ).normalize();
-
-          const move = new THREE.Vector3();
-
-          // Thumbstick: x = left/right, y = forward/back (note: y is inverted)
-          move.addScaledVector(forward, -this.direction.y * speed * dt);
-          move.addScaledVector(right, this.direction.x * speed * dt);
-
-          this.rig.object3D.position.add(move);
-        }
-      });
+        });
     </script>
-  </head>
+</head>
 
-  <body>
-    <a-scene renderer="colorManagement: true; physicallyCorrectLights: true">
-      <a-assets>
-        <a-asset-item id="treeModel" src="Assests/tree.glb"></a-asset-item>
-        <a-asset-item id="houseModel" src="Assests/asian_big_house.glb"></a-asset-item>
-      </a-assets>
+<body>
+    <a-scene renderer="colorManagement: true; physicallyCorrectLights: true" xr-mode-ui="enabled: true">
 
-      <!-- Models -->
-      <a-entity gltf-model="#treeModel"
-                position="-10 -5 -40"
-                rotation="0 0 0"
-                scale="0.7 1 0.7">
-      </a-entity>
+        <a-assets>
+            <!-- Keep your paths (just make sure 'Assests' folder name is correct on disk) -->
+            <a-asset-item id="treeModel" src="Assests/tree.glb"></a-asset-item>
+            <a-asset-item id="houseModel" src="Assests/asian_big_house.glb"></a-asset-item>
+            <img id="groundTex" src="Assests/ground.jpg">
+            <img id="skyTex" src="Assests/cloud-blue-sky-background.jpg">
+            <a-asset-item id="treeModel1" src="Assests/tree.glb"></a-asset-item>
+            <!--<video id="3d video" autoplay loop="true" src="Assests\bg-video.mp4"></video>-->
+            <a-asset-item id="tree" src="Assests/old_tree.glb"></a-asset-item>
+            <a-asset-item id="treeS" src="Assests/old_tree.glb"></a-asset-item>
+            <a-asset-item id="tree1" src="Assests/old_tree.glb"></a-asset-item>
+            <a-asset-item id="tree1" src="Assests/old_tree.glb"></a-asset-item>
+            <a-asset-item id="grass" src="Assests/stones_and_grass.glb"></a-asset-item>
+            <a-asset-item id="grass1" src="Assests/grass (1).glb"></a-asset-item>
 
-      <a-entity gltf-model="#houseModel"
-                position="10 -6 -60"
-                rotation="0 0 0"
-                scale="3 3 3">
-      </a-entity>
 
-      <!-- Ground -->
-      <a-plane src="Assests/ground.jpg"
-               position="0 -5 -53"
-               rotation="-90 0 0"
-               width="150"
-               height="100"
-               material="repeat: 10 15">
-      </a-plane>
+        </a-assets>
+        <!-- <a-video src="#3d video" position="0 10 -30" rotation="-10 0 0" width="60" height="30" autoplay="true" loop="true"></a-video>-->
 
-      <!-- Sky -->
-      <a-sky src="Assests/cloud-blue-sky-background.jpg"
-             material="repeat: 0.52 0.68"
-             geometry="radius: 500">
-      </a-sky>
-
-      <!-- ⭐ CAMERA RIG  -->
-      <a-entity id="rig" position="9.5 0 -32.6">
-        <!-- Head / camera -->
-        <a-entity id="head"
-                  camera
-                  look-controls
-                  position="0 1.6 0">
+        <!-- Tree -->
+        <a-entity gltf-model="#treeModel" position="-10 -5 -40" rotation="0 0 0" scale="0.7 1 0.7">
+        </a-entity>
+        <a-entity gltf-model="Assests/tree.glb" position="25.69284 -5.112 -39.85836" scale="0.7 1 0.7">
+        </a-entity>
+        <a-entity gltf-model="Assests/old_tree.glb" position="3.68924 -5 -31.35209" scale="0.7 1 0.7"
+            rotation="0 113.92291727924697 0">
+        </a-entity>
+        <a-entity gltf-model="Assests/old_tree.glb" position="15.83775 -4.98564 -30.47198"
+            rotation="0 -55.08817312844327 0" scale="0.7 1 0.7">
+        </a-entity>
+        <a-entity gltf-model="Assests/old_tree.glb" position="28.56275 -2.58393 -28.10979"
+            rotation="0 -101.04970153824763 0" scale="3.52006 4.41191 4.79697">
+        </a-entity>
+        <a-entity gltf-model="Assests/old_tree.glb" position="-12.90526 -2.75829 -27.403"
+            rotation="0 115.45901712799272 0" scale="3.52006 4.41191 4.79697">
+        </a-entity>
+         <a-entity gltf-model="Assests/grass (1).glb" position="-42.30857 -3.0695 -40.62122" rotation="0 115.45901712799272 0" scale="3.52006 4.41191 4.79697">
+        </a-entity>
+        <a-entity gltf-model="Assests/old_tree.glb" position="-12.90526 -2.75829 -27.403"
+            rotation="0 115.45901712799272 0" scale="3.52006 4.41191 4.79697">
+        </a-entity>
+        <a-entity id="stones_and_grass">
+            
+        </a-entity>
+        <a-entity id="random_grass">
+            
         </a-entity>
 
-        <!-- Left hand controller -->
-        <a-entity id="leftHand"
-                  oculus-touch-controls="hand: left">
+
+        <!-- House -->
+        <a-entity gltf-model="#houseModel" position="10 -6 -60" rotation="0 0 0" scale="3 3 3">
         </a-entity>
 
-        <!-- Right hand controller (moves the rig with thumbstick) -->
-        <a-entity id="rightHand"
-                  oculus-touch-controls="hand: right"
-                  thumbstick-move="speed: 3">
+        <!-- Ground -->
+        <a-plane src="#groundTex" position="0 -5 -53" rotation="-90 0 0" width="150" height="100"
+            material="repeat: 10 15">
+        </a-plane>
+
+        <!-- Sky -->
+        <a-sky src="#skyTex" material="repeat: 0.52 0.68" geometry="radius: 500">
+        </a-sky>
+
+        <!-- ⭐ HYBRID CAMERA RIG ⭐ -->
+        <!-- movement-controls: keyboard (WASD), gamepad, etc. -->
+        <a-entity id="rig" position="9.5 0 -32.6" movement-controls="fly: false; speed: 0.15">
+
+            <!-- Head / camera -->
+            <a-entity id="head" camera look-controls wasd-controls="enabled: true" position="0 1.6 0">
+            </a-entity>
+
+            <!-- Left hand controller (no custom movement yet) -->
+            <a-entity id="leftHand" oculus-touch-controls="hand: left">
+            </a-entity>
+
+            <!-- Right hand controller (thumbstick drives movement) -->
+            <a-entity id="rightHand" oculus-touch-controls="hand: right" thumbstick-move="speed: 3">
+            </a-entity>
         </a-entity>
-      </a-entity>
+
     </a-scene>
-  </body>
+
+    <script>
+        window.onload = function () {
+            const stonesAndGrass = document.querySelector('#stones_and_grass');
+            const randomGrass = document.querySelector('#random_grass');
+
+            const COUNT_z = 4;
+            const COUNT_x = 6;
+            const SPACING = 25;
+            const X = -68.94936;
+            const X1 = 68.94936;
+            const Y = -4.79521;
+            const Z = -9.83308;
+            const Z1 = -100.482;
+            
+            for (let i = 0; i < COUNT_z; i++) {
+                const item = document.createElement('a-entity');
+                item.setAttribute('gltf-model', '#grass');
+                item.setAttribute('position', `${X} ${Y } ${Z+ i * -SPACING}`);
+                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
+                stonesAndGrass.appendChild(item);
+            }
+            for (let i = 0; i < COUNT_z; i++) {
+                const item = document.createElement('a-entity');
+                item.setAttribute('gltf-model', '#grass');
+                item.setAttribute('position', `${X1} ${Y } ${Z+ i * -SPACING}`);
+                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
+                stonesAndGrass.appendChild(item);
+            }
+            for (let i = 0; i < COUNT_x; i++) {
+                const item = document.createElement('a-entity');
+                item.setAttribute('gltf-model', '#grass');
+                item.setAttribute('position', `${X+ i * SPACING} ${Y } ${Z}`);
+                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
+                item.setAttribute('rotation', '0 90 0');
+                stonesAndGrass.appendChild(item);
+            }
+            for (let i = 0; i < COUNT_x; i++) {
+                const item = document.createElement('a-entity');
+                item.setAttribute('gltf-model', '#grass');
+                item.setAttribute('position', `${X+ i * SPACING} ${Y } ${Z1}`);
+                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
+                item.setAttribute('rotation', '0 90 0');
+                stonesAndGrass.appendChild(item);
+            }
+        };
+    </script>
+
+</body>
+
 </html>
