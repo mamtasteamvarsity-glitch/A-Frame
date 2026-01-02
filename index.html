@@ -9,66 +9,69 @@
 
     <!-- A-Frame Extras (for movement-controls: keyboard, gamepad, etc.) -->
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/@c-frame/aframe-physics-system@4.2.3/dist/aframe-physics-system.min.js"></script>
+</head>
 
-    <!-- Custom component: Quest right thumbstick moves the rig -->
-    <script>
-        AFRAME.registerComponent('thumbstick-move', {
-            schema: {
-                speed: { type: 'number', default: 3 }  // movement units per second
-            },
+<!-- Custom component: Quest right thumbstick moves the rig -->
+<script>
+    AFRAME.registerComponent('thumbstick-move', {
+        schema: {
+            speed: { type: 'number', default: 3 }  // movement units per second
+        },
 
-            init: function () {
-                this.direction = new THREE.Vector2(0, 0);
-                this.rig = document.querySelector('#rig');
-                this.head = document.querySelector('#head');
+        init: function () {
+            this.direction = new THREE.Vector2(0, 0);
+            this.rig = document.querySelector('#rig');
+            this.head = document.querySelector('#head');
 
-                // Listen to thumbstick from this controller (right hand)
-                this.el.addEventListener('thumbstickmoved', (evt) => {
-                    const x = evt.detail.x; // left/right
-                    const y = evt.detail.y; // forward/back
+            // Listen to thumbstick from this controller (right hand)
+            this.el.addEventListener('thumbstickmoved', (evt) => {
+                const x = evt.detail.x; // left/right
+                const y = evt.detail.y; // forward/back
 
-                    // Apply a small deadzone so it stops cleanly
-                    if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) {
-                        this.direction.set(0, 0);
-                    } else {
-                        this.direction.set(x, y);
-                    }
-                });
-            },
+                // Apply a small deadzone so it stops cleanly
+                if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) {
+                    this.direction.set(0, 0);
+                } else {
+                    this.direction.set(x, y);
+                }
+            });
+        },
 
-            tick: function (time, delta) {
-                if (!this.rig || !this.head) return;
-                if (this.direction.lengthSq() === 0) return;
+        tick: function (time, delta) {
+            if (!this.rig || !this.head) return;
+            if (this.direction.lengthSq() === 0) return;
 
-                const dt = delta / 1000;
-                const speed = this.data.speed;
+            const dt = delta / 1000;
+            const speed = this.data.speed;
 
-                // Get forward direction from head (camera)
-                const headObj = this.head.object3D;
-                const forward = new THREE.Vector3(0, 0, -1);
-                forward.applyQuaternion(headObj.quaternion);
-                forward.y = 0;          // keep movement on ground only
-                forward.normalize();
+            // Get forward direction from head (camera)
+            const headObj = this.head.object3D;
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(headObj.quaternion);
+            forward.y = 0;          // keep movement on ground only
+            forward.normalize();
 
-                const right = new THREE.Vector3().crossVectors(
-                    forward,
-                    new THREE.Vector3(0, 1, 0)
-                ).normalize();
+            const right = new THREE.Vector3().crossVectors(
+                forward,
+                new THREE.Vector3(0, 1, 0)
+            ).normalize();
 
-                const move = new THREE.Vector3();
+            const move = new THREE.Vector3();
 
-                // Thumbstick: x = left/right, y = forward/back (note: y is inverted)
-                move.addScaledVector(forward, -this.direction.y * speed * dt);
-                move.addScaledVector(right, this.direction.x * speed * dt);
+            // Thumbstick: x = left/right, y = forward/back (note: y is inverted)
+            move.addScaledVector(forward, -this.direction.y * speed * dt);
+            move.addScaledVector(right, this.direction.x * speed * dt);
 
-                this.rig.object3D.position.add(move);
-            }
-        });
-    </script>
+            this.rig.object3D.position.add(move);
+        }
+    });
+</script>
 </head>
 
 <body>
-    <a-scene renderer="colorManagement: true; physicallyCorrectLights: true" xr-mode-ui="enabled: true">
+    <a-scene renderer="colorManagement: true; physicallyCorrectLights: true" xr-mode-ui="enabled: true"
+        physics="debug: false; friction: 1;restitution:0.5">
 
         <a-assets>
             <!-- Keep your paths (just make sure 'Assests' folder name is correct on disk) -->
@@ -84,9 +87,9 @@
             <a-asset-item id="tree1" src="Assests/old_tree.glb"></a-asset-item>
             <a-asset-item id="grass" src="Assests/stones_and_grass.glb"></a-asset-item>
             <a-asset-item id="grass1" src="Assests/grass (1).glb"></a-asset-item>
-            <a-asset-item id="grass2" src="Assests\bulbasaur-from-sv\source\bulbasaur.glb"></a-asset-item>
-
-        </a-assets>
+            <a-asset-item id="grass2" src="Assests/bulbasaur-from-sv/source/bulbasaur.glb"></a-asset-item>
+            <a-asset-item id="flower"
+                src="Assests\bulbasaur-from-sv\textures\760bb764aa20--crystal-flower-with-violet-t-0-glb (1)\source\760bb764aa20_Crystal_flower_with_violet_t_0_glb.glb"></a-asset-item></a-assets>
         <!-- <a-video src="#3d video" position="0 10 -30" rotation="-10 0 0" width="60" height="30" autoplay="true" loop="true"></a-video>-->
 
         <!-- Tree -->
@@ -106,18 +109,27 @@
         <a-entity gltf-model="Assests/old_tree.glb" position="-12.90526 -2.75829 -27.403"
             rotation="0 115.45901712799272 0" scale="3.52006 4.41191 4.79697">
         </a-entity>
-         <a-entity gltf-model="Assests/grass (1).glb" position="-42.30857 -3.0695 -40.62122" rotation="0 115.45901712799272 0" scale="3.52006 4.41191 4.79697">
-        </a-entity>
-       <a-entity gltf-model="Assests\bulbasaur-from-sv\source\bulbasaur.glb" position="37.6038 -4.98266 -32.55405" rotation="0 -17.53995698233989 0" scale="0.77066 0.71961 0.92521">
-        </a-entity>
-        </a-entity>
-        <a-entity id="stones_and_grass">
-            
-        </a-entity>
-        <a-entity id="random_grass">
-            
+        <a-entity gltf-model="#grass1" position="-42.30857 -3.0695 -40.62122" rotation="0 115.45901712799272 0"
+            scale="3.52006 4.41191 4.79697">
         </a-entity>
 
+        <a-entity gltf-model="Assests\bulbasaur-from-sv\source\bulbasaur.glb" position="37.6038 4.98266 -32.55405"
+            rotation="0 -17.53995698233989 0" scale="0.77066 0.71961 0.92521" dynamic-body="mass:1;">
+        </a-entity>
+
+        <a-entity gltf-model="#flower" position="-42.12468 27.34883 -40.98534"
+            rotation="2.2992796318599935 -119.78083777666451 -173.58902319078553" scale="3.52006 4.41191 4.79697"
+            dynamic-body="mass:1;">
+        </a-entity>
+
+        <a-entity id="stones_and_grass">
+
+        </a-entity>
+        <a-entity id="random_grass">
+
+        </a-entity>
+        <a-entity id="random_flowers">
+        </a-entity>
 
         <!-- House -->
         <a-entity gltf-model="#houseModel" position="10 -6 -60" rotation="0 0 0" scale="3 3 3">
@@ -125,7 +137,7 @@
 
         <!-- Ground -->
         <a-plane src="#groundTex" position="0 -5 -53" rotation="-90 0 0" width="150" height="100"
-            material="repeat: 10 15">
+            material="repeat: 10 15" static-body>
         </a-plane>
 
         <!-- Sky -->
@@ -155,6 +167,7 @@
         window.onload = function () {
             const stonesAndGrass = document.querySelector('#stones_and_grass');
             const randomGrass = document.querySelector('#random_grass');
+            const randomFlowers = document.querySelector('#random_flowers').components['instanced-mesh'];
 
             const COUNT_z = 4;
             const COUNT_x = 6;
@@ -164,25 +177,25 @@
             const Y = -4.79521;
             const Z = -9.83308;
             const Z1 = -100.482;
-            
+
             for (let i = 0; i < COUNT_z; i++) {
                 const item = document.createElement('a-entity');
                 item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X} ${Y } ${Z+ i * -SPACING}`);
+                item.setAttribute('position', `${X} ${Y} ${Z + i * -SPACING}`);
                 item.setAttribute('scale', '11.60201 16.54001 -25.38848');
                 stonesAndGrass.appendChild(item);
             }
             for (let i = 0; i < COUNT_z; i++) {
                 const item = document.createElement('a-entity');
                 item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X1} ${Y } ${Z+ i * -SPACING}`);
+                item.setAttribute('position', `${X1} ${Y} ${Z + i * -SPACING}`);
                 item.setAttribute('scale', '11.60201 16.54001 -25.38848');
                 stonesAndGrass.appendChild(item);
             }
             for (let i = 0; i < COUNT_x; i++) {
                 const item = document.createElement('a-entity');
                 item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X+ i * SPACING} ${Y } ${Z}`);
+                item.setAttribute('position', `${X + i * SPACING} ${Y} ${Z}`);
                 item.setAttribute('scale', '11.60201 16.54001 -25.38848');
                 item.setAttribute('rotation', '0 90 0');
                 stonesAndGrass.appendChild(item);
@@ -190,11 +203,24 @@
             for (let i = 0; i < COUNT_x; i++) {
                 const item = document.createElement('a-entity');
                 item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X+ i * SPACING} ${Y } ${Z1}`);
+                item.setAttribute('position', `${X + i * SPACING} ${Y} ${Z1}`);
                 item.setAttribute('scale', '11.60201 16.54001 -25.38848');
                 item.setAttribute('rotation', '0 90 0');
                 stonesAndGrass.appendChild(item);
             }
+
+            for (let i = 0; i < 100; i++) {
+                const item = document.createElement('a-entity');
+                item.setAttribute('gltf-model', '#flower');
+                const X = Math.random() * 100 - 50;
+                const Z = Math.random() * 100 - 50;
+                item.setAttribute('position', `${X} 27 ${Z}`);
+                item.setAttribute('dynamic-body', 'mass:1;');
+               
+                randomFlowers.appendChild(item);
+            }
+
+
         };
     </script>
 
