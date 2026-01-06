@@ -2,56 +2,22 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>A-Frame Small Trees + Movement</title>
+  <title>Instancing + Fake Physics</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
-  <!-- A-Frame Extras -->
-  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
-
   <script>
-    AFRAME.registerComponent('easy-instanced', {
-      schema: {
-        count: { type: 'int', default: 200 }
+    AFRAME.registerPrimitive('a-blahblah', {
+      defaultComponents: {
+        geometry: { primitive: 'box', width: 8 },
+        material: { color: 'blue' }
       },
 
-      init() {
-        this.el.addEventListener('model-loaded', () => {
-          const mesh = this.el.getObject3D('mesh');
-
-          let baseMesh;
-          mesh.traverse(obj => {
-            if (obj.isMesh && !baseMesh) baseMesh = obj;
-          });
-
-          const instancedMesh = new THREE.InstancedMesh(
-            baseMesh.geometry,
-            baseMesh.material,
-            this.data.count
-          );
-
-          const dummy = new THREE.Object3D();
-
-          for (let i = 0; i < this.data.count; i++) {
-            dummy.position.set(
-              Math.random() * 30 - 15,
-              0,
-              Math.random() * 30 - 15
-            );
-
-            dummy.rotation.y = Math.random() * Math.PI * 2;
-
-            // 🌱 MAKE TREES VERY SMALL
-            dummy.scale.set(0.2, 0.2, 0.2);
-
-            dummy.updateMatrix();
-            instancedMesh.setMatrixAt(i, dummy.matrix);
-          }
-
-          this.el.removeObject3D('mesh');
-          this.el.sceneEl.object3D.add(instancedMesh);
-        });
+      mappings: {
+        height: 'geometry.height',
+        depth: 'geometry.depth',
+        color: 'material.color'
       }
     });
   </script>
@@ -60,23 +26,17 @@
 <body>
   <a-scene background="color: #ECECEC">
 
-    <a-assets>
-      <a-asset-item id="tree" src="Assests/tree.glb"></a-asset-item>
-    </a-assets>
+    <!-- Now this works correctly -->
+    <a-blahblah
+      color="green"
+      height="3"
+      depth="4"
+      position="0 1.5 -5">
+    </a-blahblah>
 
-    <!-- Small instanced trees -->
-    <a-entity
-      gltf-model="#tree"
-      easy-instanced="count: 2">
-    </a-entity>
-
-    <!-- Ground -->
-    <a-plane rotation="-90 0 0" width="50" height="50" color="#7BC8A4"></a-plane>
-
-    <!-- Movement rig -->
-    <a-entity id="rig" movement-controls="speed: 0.15">
-      <a-entity camera look-controls position="0 1.6 0"></a-entity>
-    </a-entity>
+    <a-camera position="0 1.6 0">
+      
+    </a-camera>
 
   </a-scene>
 </body>
