@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sri Harmandir Sahib — Golden Temple, Amritsar</title>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<style>
+*{margin:0;padding:0}
+body{overflow:hidden;background:#0a0a0f;font-family:'Segoe UI',Arial,sans-serif}
+#overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(12px);cursor:pointer;transition:opacity 2s ease}
+#overlay.hide{opacity:0;pointer-events:none}
+#overlay .box{text-align:center;color:#fff}
+#overlay h1{font-size:46px;color:#ffd700;text-shadow:0 0 60px rgba(255,215,0,.35);font-weight:300;letter-spacing:4px;margin-bottom:6px}
+#overlay h2{font-size:15px;font-weight:300;opacity:.55;letter-spacing:2px;margin-bottom:28px}
+#overlay .btn{display:inline-block;padding:14px 44px;border:1px solid rgba(255,215,0,.5);color:#ffd700;border-radius:40px;font-size:12px;letter-spacing:3px;text-transform:uppercase;animation:glow 2.5s ease infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(255,215,0,.15)}50%{box-shadow:0 0 24px rgba(255,215,0,.3)}}
+#hud{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.75);font-size:11px;background:rgba(0,0,0,.45);padding:8px 20px;border-radius:10px;pointer-events:none;z-index:10;backdrop-filter:blur(6px);letter-spacing:.5px;border:1px solid rgba(255,215,0,.12)}
+#hud b{color:#ffd700}
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="this.classList.add('hide');initAudio()">
+<div class="box">
+<h1>ਸ੍ਰੀ ਹਰਿਮੰਦਰ ਸਾਹਿਬ</h1>
+<h2>Sri Harmandir Sahib &mdash; The Golden Temple, Amritsar</h2>
+<div class="btn">Enter the Sacred Space</div>
+</div>
+</div>
+
+<div id="hud"><b>WASD</b> Walk &nbsp;&middot;&nbsp; <b>Mouse</b> Look &nbsp;&middot;&nbsp; <b>N</b> Day / Night &nbsp;&middot;&nbsp; <b>L</b> Lamps</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   AUDIO — soft tanpura + gentle water
+   ══════════════════════════════════════════════ */
+let _au=false;
+function initAudio(){
+  if(_au)return;_au=true;
+  try{
+    const C=new(window.AudioContext||window.webkitAudioContext)();
+    const mg=C.createGain();mg.gain.value=0;mg.connect(C.destination);
+    mg.gain.linearRampToValueAtTime(.06,C.currentTime+5);
+    [130.81,196.0,261.63,392.0].forEach((f,i)=>{
+      const o=C.createOscillator(),g=C.createGain();
+      o.type='sine';o.frequency.value=f;
+      g.gain.value=i<2?.22:.09;
+      o.connect(g);g.connect(mg);o.start();
+      const l=C.createOscillator(),lg=C.createGain();
+      l.frequency.value=.12+i*.04;lg.gain.value=.3;
+      l.connect(lg);lg.connect(o.frequency);l.start();
+    });
+    // gentle water noise
+    const bs=4096,buf=C.createBuffer(1,C.sampleRate*4,C.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.sin(i/C.sampleRate*.8)*.15;
+    const ws=C.createBufferSource();ws.buffer=buf;ws.loop=true;
+    const wg=C.createGain();wg.gain.value=.012;
+    const bf=C.createBiquadFilter();bf.type='lowpass';bf.frequency.value=400;
+    ws.connect(bf);bf.connect(wg);wg.connect(mg);ws.start();
+  }catch(e){}
+}
+
+/* ══════════════════════════════════════════════
+   REALISTIC SKY SHADER — 5-band gradient
+   ══════════════════════════════════════════════ */
+AFRAME.registerShader('real-sky',{
+  schema:{
+    zenith:{type:'color',default:'#1a2a6c',is:'uniform'},
+    upper:{type:'color',default:'#4a7ab5',is:'uniform'},
+    mid:{type:'color',default:'#87CEEB',is:'uniform'},
+    lower:{type:'color',default:'#e8c488',is:'uniform'},
+    horizon:{type:'color',default:'#f5deb3',is:'uniform'},
+    sunDir:{type:'vec3',default:{x:.5,y:.3,z:-.8},is:'uniform'},
+    sunColor:{type:'color',default:'#fff4e0',is:'uniform'},
+    sunSize:{type:'float',default:120.0,is:'uniform'},
+    hazeStrength:{type:'float',default:.15,is:'uniform'}
+  },
+  vertexShader:`
+    varying vec3 vWP;
+    void main(){
+      vWP=(modelMatrix*vec4(position,1.)).xyz;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
+    }`,
+  fragmentShader:`
+    uniform vec3 zenith,upper,mid,lower,horizon,sunColor,sunDir;
+    uniform float sunSize,hazeStrength;
+    varying vec3 vWP;
+    void main(){
+      vec3 d=normalize(vWP);
+      float h=d.y;
+      // 5-band sky gradient
+      vec3 c;
+      if(h>0.6) c=mix(upper,zenith,smoothstep(0.6,1.0,h));
+      else if(h>0.2) c=mix(mid,upper,smoothstep(0.2,0.6,h));
+      else if(h>0.0) c=mix(lower,mid,smoothstep(0.0,0.2,h));
+      else c=mix(horizon,lower,smoothstep(-0.1,0.0,h));
+      // sun disc
+      vec3 sd=normalize(sunDir);
+      float sun=max(dot(d,sd),0.0);
+      c+=sunColor*pow(sun,sunSize)*0.7;
+      // haze near horizon
+      float haze=exp(-abs(h)*4.0)*hazeStrength;
+      c=mix(c,horizon,haze);
+      // subtle warm scatter
+      c+=sunColor*pow(max(sun,0.0),4.0)*0.06;
+      gl_FragColor=vec4(c,1.0);
+    }`
+});
+
+/* ══════════════════════════════════════════════
+   REALISTIC WATER SHADER — PBR-like reflective
+   ══════════════════════════════════════════════ */
+AFRAME.registerShader('real-water',{
+  schema:{
+    deepColor:{type:'color',default:'#0a3d5c',is:'uniform'},
+    shallowColor:{type:'color',default:'#1a7a9b',is:'uniform'},
+    reflColor:{type:'color',default:'#c8a200',is:'uniform'},
+    skyColor:{type:'color',default:'#87CEEB',is:'uniform'},
+    time:{type:'time',is:'uniform'},
+    opacity:{type:'float',default:.92,is:'uniform'},
+    waveScale:{type:'float',default:1.0,is:'uniform'}
+  },
+  vertexShader:`
+    varying vec2 vUv;
+    varying vec3 vPos;
+    varying vec3 vNormal;
+    varying vec3 vWorldPos;
+    uniform float time,waveScale;
+    void main(){
+      vUv=uv;
+      float t=time*0.00025;
+      vec3 p=position;
+      // multi-octave wave displacement
+      float w=sin(p.x*0.5+t*2.)*0.08*waveScale
+             +cos(p.y*0.4+t*1.5)*0.06*waveScale
+             +sin((p.x+p.y)*0.3+t)*0.1*waveScale
+             +sin(p.x*1.2-t*3.)*0.03*waveScale
+             +cos(p.y*1.5+t*2.5)*0.025*waveScale;
+      p.z+=w;
+      // compute displaced normal
+      float dx=cos(p.x*0.5+t*2.)*0.04+cos((p.x+p.y)*0.3+t)*0.03;
+      float dy=-sin(p.y*0.4+t*1.5)*0.024+cos((p.x+p.y)*0.3+t)*0.03;
+      vNormal=normalize(vec3(-dx,1.0,-dy));
+      vPos=p;
+      vWorldPos=(modelMatrix*vec4(p,1.0)).xyz;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);
+    }`,
+  fragmentShader:`
+    uniform vec3 deepColor,shallowColor,reflColor,skyColor;
+    uniform float time,opacity;
+    varying vec2 vUv;
+    varying vec3 vPos,vNormal,vWorldPos;
+    void main(){
+      float t=time*0.0002;
+      // fresnel approximation
+      vec3 viewDir=normalize(cameraPosition-vWorldPos);
+      float fresnel=pow(1.0-max(dot(viewDir,vNormal),0.0),3.5);
+      fresnel=clamp(fresnel,0.15,0.95);
+      // base water color with depth variation
+      float depthFade=smoothstep(0.5,0.0,length(vUv-0.5));
+      vec3 waterBase=mix(deepColor,shallowColor,depthFade*0.5+0.25);
+      // caustics-like pattern
+      float c1=sin(vUv.x*40.+t*3.)*cos(vUv.y*35.-t*2.);
+      float c2=sin((vUv.x+vUv.y)*25.+t*1.5);
+      float caustic=pow(max(c1*0.5+c2*0.5,0.0),3.0)*0.15;
+      waterBase+=vec3(caustic*0.3,caustic*0.5,caustic*0.8);
+      // temple golden reflection — soft rectangle in center
+      float rx=smoothstep(0.22,0.38,abs(vUv.x-0.5));
+      float ry=smoothstep(0.22,0.38,abs(vUv.y-0.5));
+      float reflMask=1.0-max(rx,ry);
+      // animate reflection distortion
+      float rd=sin(vUv.x*20.+t*4.)*cos(vUv.y*18.-t*3.)*0.3;
+      reflMask*=(0.35+rd*0.15);
+      reflMask=max(reflMask,0.0);
+      // blend reflection
+      vec3 reflectedColor=mix(reflColor,reflColor*1.3,sin(t*2.)*0.5+0.5);
+      // sky reflection via fresnel
+      vec3 skyRefl=skyColor*0.4;
+      // combine
+      vec3 col=waterBase;
+      col=mix(col,reflectedColor,reflMask*0.5);
+      col=mix(col,skyRefl,fresnel*0.4);
+      col=mix(col,reflectedColor*0.6,fresnel*reflMask*0.3);
+      // specular sparkles
+      float spec=pow(max(sin(vUv.x*100.+t*6.)*cos(vUv.y*90.-t*5.),0.0),24.0);
+      col+=vec3(1.,.95,.7)*spec*0.2;
+      // subtle edge darkening
+      float edge=smoothstep(0.5,0.35,max(abs(vUv.x-.5),abs(vUv.y-.5)));
+      col*=0.75+0.25*edge;
+      gl_FragColor=vec4(col,opacity);
+    }`,
+  raw:false
+});
+
+/* ══════════════════════════════════════════════
+   DAY-NIGHT SYSTEM — smooth cinematic transition
+   ══════════════════════════════════════════════ */
+AFRAME.registerComponent('day-night',{
+  init(){
+    this.phase=0; // 0=day, 1=night
+    this.t=0;
+    this.target=0;
+    document.addEventListener('keydown',e=>{
+      if(e.key==='n'||e.key==='N'){
+        this.phase=1-this.phase;
+        this.target=this.phase;
+      }
+    });
+  },
+  tick(_,dt){
+    if(!dt)return;
+    const diff=this.target-this.t;
+    if(Math.abs(diff)<.002)return;
+    this.t+=diff*Math.min(dt*.001,.04);
+    this.t=Math.max(0,Math.min(1,this.t));
+    const n=this.t;
+    const lc=(a,b)=>{const ca=new THREE.Color(a),cb=new THREE.Color(b);ca.lerp(cb,n);return'#'+ca.getHexString()};
+    // sky
+    const sky=document.getElementById('sky');
+    if(sky){
+      sky.setAttribute('material','zenith',lc('#1a2a6c','#020308'));
+      sky.setAttribute('material','upper',lc('#4a7ab5','#060d1e'));
+      sky.setAttribute('material','mid',lc('#87CEEB','#0a1628'));
+      sky.setAttribute('material','lower',lc('#e8c488','#0d1a30'));
+      sky.setAttribute('material','horizon',lc('#f5deb3','#101828'));
+      sky.setAttribute('material','hazeStrength',String(.15-.08*n));
+      sky.setAttribute('material','sunSize',String(120-80*n));
+    }
+    // fog
+    this.el.setAttribute('fog','color',lc('#d4c4a8','#080e18'));
+    this.el.setAttribute('fog','density',String(.006+.004*n));
+    // lights
+    const amb=document.getElementById('amb');
+    if(amb){
+      amb.setAttribute('light','color',lc('#ffeedd','#1a2855'));
+      amb.setAttribute('light','intensity',String(.45-.22*n));
+    }
+    const sun=document.getElementById('sun');
+    if(sun){
+      sun.setAttribute('light','color',lc('#fff4e0','#1a2244'));
+      sun.setAttribute('light','intensity',String(1.2-.9*n));
+      // move sun lower at night
+      const sy=45-30*n;
+      sun.setAttribute('position',`35 ${sy} 25`);
+    }
+    // temple glow
+    const g1=document.getElementById('glow1');
+    if(g1) g1.setAttribute('light','intensity',String(.6+2.5*n));
+    const g2=document.getElementById('glow2');
+    if(g2) g2.setAttribute('light','intensity',String(.25+1.8*n));
+    const g3=document.getElementById('glow3');
+    if(g3) g3.setAttribute('light','intensity',String(.15+1.2*n));
+    // gold emissive
+    document.querySelectorAll('.gld').forEach(el=>{
+      el.setAttribute('material','emissiveIntensity',String(.4+.5*n));
+    });
+    // water
+    const w=document.getElementById('water');
+    if(w){
+      w.setAttribute('material','deepColor',lc('#0a3d5c','#030d18'));
+      w.setAttribute('material','shallowColor',lc('#1a7a9b','#081a28'));
+      w.setAttribute('material','skyColor',lc('#87CEEB','#0a1628'));
+    }
+    // stars & moon
+    const st=document.getElementById('stars');
+    if(st) st.setAttribute('visible',n>.25);
+    const mn=document.getElementById('moon');
+    if(mn){mn.setAttribute('visible',n>.2);mn.setAttribute('material','opacity',String(Math.max(0,(n-.2)*1.3)));}
+    // diyas
+    document.querySelectorAll('.dflame').forEach(el=>{
+      el.setAttribute('material','opacity',String(.2+.8*n));
+    });
+    document.querySelectorAll('.dlight').forEach(el=>{
+      el.setAttribute('light','intensity',String(.05+.55*n));
+    });
+  }
+});
+
+/* ═══ Lamp toggle ═══ */
+AFRAME.registerComponent('lamp-ctrl',{
+  init(){
+    this.on=true;
+    document.addEventListener('keydown',e=>{
+      if(e.key==='l'||e.key==='L'){
+        this.on=!this.on;
+        document.querySelectorAll('.diya').forEach(el=>el.setAttribute('visible',this.on));
+      }
+    });
+  }
+});
+
+/* ═══ Bird flight ═══ */
+AFRAME.registerComponent('bird-fly',{
+  schema:{r:{default:35},h:{default:22},spd:{default:.1},off:{default:0}},
+  tick(t){
+    const d=this.data,a=t*.001*d.spd+d.off;
+    const p=this.el.object3D.position;
+    p.set(Math.cos(a)*d.r,d.h+Math.sin(a*2)*1.5,Math.sin(a)*d.r);
+    this.el.object3D.rotation.y=-a+Math.PI/2;
+    const w=this.el.querySelectorAll('.bw');
+    const f=Math.sin(t*.013)*28*Math.PI/180;
+    if(w[0])w[0].object3D.rotation.z=f;
+    if(w[1])w[1].object3D.rotation.z=-f;
+  }
+});
+
+/* ═══ Cloud drift ═══ */
+AFRAME.registerComponent('cloud-move',{
+  schema:{spd:{default:.08},range:{default:130}},
+  tick(){
+    this.el.object3D.position.x+=this.data.spd*.012;
+    if(this.el.object3D.position.x>this.data.range) this.el.object3D.position.x=-this.data.range;
+  }
+});
+
+/* ═══ Golden dust particles ═══ */
+AFRAME.registerComponent('gold-dust',{
+  init(){
+    const N=400,g=new THREE.BufferGeometry();
+    const p=new Float32Array(N*3),c=new Float32Array(N*3);
+    for(let i=0;i<N;i++){
+      p[i*3]=(Math.random()-.5)*100;p[i*3+1]=Math.random()*25+.5;p[i*3+2]=(Math.random()-.5)*100;
+      const v=.75+Math.random()*.25;c[i*3]=v;c[i*3+1]=v*.85;c[i*3+2]=v*.25;
+    }
+    g.setAttribute('position',new THREE.BufferAttribute(p,3));
+    g.setAttribute('color',new THREE.BufferAttribute(c,3));
+    const m=new THREE.PointsMaterial({size:.055,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending,vertexColors:true});
+    this._p=new THREE.Points(g,m);
+    this.el.object3D.add(this._p);this._d=p;this._n=N;
+  },
+  tick(t){
+    for(let i=0;i<this._n;i++){
+      this._d[i*3+1]+=.003;
+      if(this._d[i*3+1]>25){this._d[i*3+1]=.5;this._d[i*3]=(Math.random()-.5)*100;}
+    }
+    this._p.geometry.attributes.position.needsUpdate=true;
+  }
+});
+
+/* ═══ Star field ═══ */
+AFRAME.registerComponent('star-field',{
+  init(){
+    const N=900,g=new THREE.BufferGeometry(),p=new Float32Array(N*3),s=new Float32Array(N);
+    for(let i=0;i<N;i++){
+      const th=Math.random()*Math.PI*2,ph=Math.acos(Math.random()*.75+.25),r=480;
+      p[i*3]=r*Math.sin(ph)*Math.cos(th);p[i*3+1]=r*Math.cos(ph);p[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+      s[i]=.3+Math.random()*.8;
+    }
+    g.setAttribute('position',new THREE.BufferAttribute(p,3));
+    g.setAttribute('aSize',new THREE.BufferAttribute(s,1));
+    const vsh=`attribute float aSize;varying float vS;void main(){vS=aSize;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aSize*(300.0/length(mv.xyz));gl_Position=projectionMatrix*mv;}`;
+    const fsh=`varying float vS;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;float a=1.-smoothstep(.2,.5,d);gl_FragColor=vec4(1.,1.,.95,a*.9);}`;
+    const m=new THREE.ShaderMaterial({vertexShader:vsh,fragmentShader:fsh,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+    this.el.object3D.add(new THREE.Points(g,m));
+  }
+});
+
+/* ═══ Flag wave ═══ */
+AFRAME.registerComponent('flag-wave',{
+  tick(t){
+    const m=this.el.getObject3D('mesh');
+    if(!m||!m.geometry)return;
+    const p=m.geometry.attributes.position;
+    if(!this._o)this._o=new Float32Array(p.array);
+    const T=t*.0025;
+    for(let i=0;i<p.count;i++){
+      const ox=this._o[i*3];
+      p.array[i*3+2]=this._o[i*3+2]+Math.sin(ox*3.5+T)*.12*(Math.max(ox+.5,0));
+    }
+    p.needsUpdate=true;
+  }
+});
+
+/* ═══ Lotus bob ═══ */
+AFRAME.registerComponent('lotus-bob',{
+  schema:{spd:{default:.4}},
+  init(){this._y=this.el.object3D.position.y;},
+  tick(t){
+    this.el.object3D.position.y=this._y+Math.sin(t*.001*this.data.spd)*.03;
+    this.el.object3D.rotation.y+=.00015;
+  }
+});
+</script>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCENE
+     ══════════════════════════════════════════════════════════ -->
+<a-scene
+  day-night lamp-ctrl
+  vr-mode-ui="enabled:true"
+  renderer="antialias:true;physicallyCorrectLights:true;colorManagement:true;
+            toneMapping:ACESFilmic;toneMappingExposure:1.05;
+            sortObjects:true;alpha:false"
+  shadow="type:pcfsoft;autoUpdate:true"
+  fog="type:exponential;color:#d4c4a8;density:0.006"
+>
+
+<!-- ════ ASSETS ════ -->
+<a-assets timeout="3000">
+  <a-mixin id="G" material="color:#FFD700;metalness:1;roughness:0.1;
+    emissive:#c8a200;emissiveIntensity:0.4"></a-mixin>
+  <a-mixin id="M" material="color:#f0ece4;metalness:0.06;roughness:0.18;
+    emissive:#e2ddd0;emissiveIntensity:0.03"></a-mixin>
+  <a-mixin id="DM" material="color:#a89880;roughness:0.35;metalness:0.04"></a-mixin>
+  <a-mixin id="PC" material="color:#ede6d8;metalness:0.08;roughness:0.16;
+    emissive:#d8d0c0;emissiveIntensity:0.02"></a-mixin>
+</a-assets>
+
+<!-- ════ SKY ════ -->
+<a-sky id="sky" material="shader:real-sky;
+  zenith:#1a2a6c;upper:#4a7ab5;mid:#87CEEB;lower:#e8c488;horizon:#f5deb3;
+  sunDir:0.5 0.3 -0.8;sunColor:#fff4e0;sunSize:120;hazeStrength:0.15"
+  radius="500"></a-sky>
+
+<!-- ════ STARS & MOON ════ -->
+<a-entity id="stars" star-field visible="false"></a-entity>
+<a-entity id="moon" position="-90 100 -70" visible="false">
+  <a-sphere radius="6" material="shader:flat;color:#eee8d5;opacity:0;transparent:true"></a-sphere>
+  <a-sphere radius="7.5" material="shader:flat;color:#eee8d5;opacity:0;transparent:true" scale="1.2 1.2 1" position="0 0 -1"></a-sphere>
+</a-entity>
+
+<!-- ════ CLOUDS ════ -->
+<a-entity cloud-move="spd:0.06;range:140" position="-70 38 -40">
+  <a-sphere material="shader:flat;color:#fff;opacity:.08;transparent:true" radius="10" scale="4 .5 2"></a-sphere>
+  <a-sphere material="shader:flat;color:#fff;opacity:.06;transparent:true" radius="7" scale="3 .4 1.5" position="6 1 3"></a-sphere>
+</a-entity>
+<a-entity cloud-move="spd:0.04;range:140" position="40 42 25">
+  <a-sphere material="shader:flat;color:#fef8ea;opacity:.07;transparent:true" radius="12" scale="4.5 .45 2.2"></a-sphere>
+  <a-sphere material="shader:flat;color:#fff;opacity:.05;transparent:true" radius="8" scale="3 .35 1.5" position="-7 .5 -4"></a-sphere>
+</a-entity>
+<a-entity cloud-move="spd:0.09;range:140" position="-25 35 55">
+  <a-sphere material="shader:flat;color:#fff;opacity:.06;transparent:true" radius="11" scale="5 .4 2.5"></a-sphere>
+</a-entity>
+
+<!-- ════ LIGHTING — cinematic ════ -->
+<a-entity id="amb" light="type:ambient;color:#ffeedd;intensity:0.45"></a-entity>
+
+<a-entity id="sun" light="type:directional;color:#fff4e0;intensity:1.2;
+  castShadow:true;shadowMapWidth:4096;shadowMapHeight:4096;
+  shadowCameraLeft:-55;shadowCameraRight:55;shadowCameraTop:55;shadowCameraBottom:-55;
+  shadowCameraNear:0.5;shadowCameraFar:180;shadowBias:-0.001;shadowRadius:3"
+  position="35 45 25"></a-entity>
+
+<!-- warm fill from opposite side -->
+<a-entity light="type:directional;color:#ffe8c8;intensity:0.2" position="-30 25 -20"></a-entity>
+
+<!-- temple glow lights -->
+<a-entity id="glow1" light="type:point;color:#FFD700;intensity:0.6;distance:60;decay:1.0" position="0 10 0"></a-entity>
+<a-entity id="glow2" light="type:point;color:#ffaa33;intensity:0.25;distance:45;decay:1.5" position="0 3.5 0"></a-entity>
+<a-entity id="glow3" light="type:point;color:#ffc97a;intensity:0.15;distance:35;decay:1.8" position="0 5 -8"></a-entity>
+<!-- subtle rim lights for sarovar edge visibility -->
+<a-entity light="type:point;color:#ffe0b0;intensity:0.1;distance:30;decay:2" position="-25 2 0"></a-entity>
+<a-entity light="type:point;color:#ffe0b0;intensity:0.1;distance:30;decay:2" position="25 2 0"></a-entity>
+<a-entity light="type:point;color:#ffd8a0;intensity:0.08;distance:25;decay:2" position="0 2 25"></a-entity>
+
+<!-- ════ GROUND ════ -->
+<a-plane position="0 -0.05 0" rotation="-90 0 0" width="300" height="300"
+  material="color:#b8a882;roughness:0.92;metalness:0" shadow="receive:true"></a-plane>
+<!-- distant ground ring -->
+<a-ring position="0 -0.04 0" rotation="-90 0 0" radius-inner="45" radius-outer="150"
+  material="color:#9e9070;roughness:0.95" segments-theta="48"></a-ring>
+
+<!-- ════════════════════════════════════════════
+     SAROVAR — realistic reflective water
+     ════════════════════════════════════════════ -->
+<!-- water bed -->
+<a-plane position="0 -0.6 0" rotation="-90 0 0" width="68" height="68"
+  material="color:#0a1a2a;roughness:0.98;opacity:0.7;transparent:true"></a-plane>
+
+<!-- water surface -->
+<a-plane id="water" position="0 0.06 0" rotation="-90 0 0" width="66" height="66"
+  segments-width="100" segments-height="100"
+  material="shader:real-water;deepColor:#0a3d5c;shallowColor:#1a7a9b;
+    reflColor:#c8a200;skyColor:#87CEEB;opacity:0.92;transparent:true;side:double"
+  shadow="receive:true"></a-plane>
+
+<!-- ════ SAROVAR BORDERS — stepped marble ════ -->
+<!-- outer border step 1 -->
+<a-box mixin="M" position="0 -0.15 -33.5" width="68.5" height="0.5" depth="1.6" shadow="cast:true;receive:true"></a-box>
+<a-box mixin="M" position="0 -0.15  33.5" width="68.5" height="0.5" depth="1.6" shadow="cast:true;receive:true"></a-box>
+<a-box mixin="M" position="-33.5 -0.15 0" width="1.6" height="0.5" depth="68.5" shadow="cast:true;receive:true"></a-box>
+<a-box mixin="M" position=" 33.5 -0.15 0" width="1.6" height="0.5" depth="68.5" shadow="cast:true;receive:true"></a-box>
+<!-- step 2 -->
+<a-box mixin="M" position="0 0.15 -33" width="67.5" height="0.3" depth="0.9" shadow="cast:true;receive:true"></a-box>
+<a-box mixin="M" position="0 0.15  33" width="67.5" height="0.3" depth="0.9" shadow="cast:true;receive:true"></a-box>
+<a-box mixin="M" position="-33 0.15 0" width="0.9" height="0.3" depth="67.5" shadow="cast:true;receive:true"></a-box>
+<a-box mixin="M" position=" 33 0.15 0" width="0.9" height="0.3" depth="67.5" shadow="cast:true;receive:true"></a-box>
+<!-- gold trim on top -->
+<a-box class="gld" mixin="G" position="0 0.33 -33" width="67.6" height="0.05" depth="0.95"></a-box>
+<a-box class="gld" mixin="G" position="0 0.33  33" width="67.6" height="0.05" depth="0.95"></a-box>
+<a-box class="gld" mixin="G" position="-33 0.33 0" width="0.95" height="0.05" depth="67.6"></a-box>
+<a-box class="gld" mixin="G" position=" 33 0.33 0" width="0.95" height="0.05" depth="67.6"></a-box>
+
+<!-- ════ GHATS — bathing steps ════ -->
+<!-- north side ghats -->
+<a-box mixin="M" position="22 0.05 -32.5" width="7" height="0.12" depth="1.2"></a-box>
+<a-box mixin="M" position="22 -0.12 -31.5" width="7" height="0.12" depth="1.0"></a-box>
+<a-box mixin="M" position="22 -0.28 -30.6" width="7" height="0.12" depth="1.0"></a-box>
+<a-box mixin="M" position="22 -0.44 -29.7" width="7" height="0.12" depth="1.0"></a-box>
+<!-- south side ghats -->
+<a-box mixin="M" position="-22 0.05 32.5" width="7" height="0.12" depth="1.2"></a-box>
+<a-box mixin="M" position="-22 -0.12 31.5" width="7" height="0.12" depth="1.0"></a-box>
+<a-box mixin="M" position="-22 -0.28 30.6" width="7" height="0.12" depth="1.0"></a-box>
+<a-box mixin="M" position="-22 -0.44 29.7" width="7" height="0.12" depth="1.0"></a-box>
+<!-- east ghats -->
+<a-box mixin="M" position="32.5 0.05 18" width="1.2" height="0.12" depth="6"></a-box>
+<a-box mixin="M" position="31.5 -0.12 18" width="1.0" height="0.12" depth="6"></a-box>
+<a-box mixin="M" position="30.6 -0.28 18" width="1.0" height="0.12" depth="6"></a-box>
+
+<!-- ════ PARIKRAMA WALKWAY ════ -->
+<a-box mixin="M" position="0 0.02 -35" width="74" height="0.04" depth="3.5" shadow="receive:true"></a-box>
+<a-box mixin="M" position="0 0.02  35" width="74" height="0.04" depth="3.5" shadow="receive:true"></a-box>
+<a-box mixin="M" position="-35 0.02 0" width="3.5" height="0.04" depth="74" shadow="receive:true"></a-box>
+<a-box mixin="M" position=" 35 0.02 0" width="3.5" height="0.04" depth="74" shadow="receive:true"></a-box>
+
+<!-- ══════════════════════════════════════════════════
+     TEMPLE — realistic proportions & architecture
+     ══════════════════════════════════════════════════ -->
+<a-entity id="temple" position="0 0 0">
+
+  <!-- ─── Marble Plinth — 4-step platform ─── -->
+  <a-box mixin="M" position="0 0.06 0" width="19" height="0.12" depth="19" shadow="cast:true;receive:true"></a-box>
+  <a-box mixin="M" position="0 0.22 0" width="18" height="0.2" depth="18" shadow="cast:true;receive:true"></a-box>
+  <a-box mixin="M" position="0 0.42 0" width="17" height="0.2" depth="17" shadow="cast:true;receive:true"></a-box>
+  <a-box mixin="M" position="0 0.62 0" width="16.2" height="0.2" depth="16.2" shadow="cast:true;receive:true"></a-box>
+  <a-box mixin="PC" position="0 0.82 0" width="15.5" height="0.2" depth="15.5" shadow="cast:true;receive:true"></a-box>
+  <!-- decorative plinth edge -->
+  <a-box class="gld" mixin="G" position="0 0.94 0" width="15.6" height="0.04" depth="15.6"></a-box>
+
+  <!-- ─── Ground Floor (Layer 1) ─── -->
+  <a-box class="gld" mixin="G" position="0 2.9 0" width="13" height="3.8" depth="13" shadow="cast:true;receive:true"></a-box>
+
+  <!-- deep window recesses — all 4 sides -->
+  <!-- front z- -->
+  <a-box mixin="DM" position="-4.5 2.9 -6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <a-box mixin="DM" position="-1.5 2.9 -6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <a-box mixin="DM" position=" 1.5 2.9 -6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <a-box mixin="DM" position=" 4.5 2.9 -6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <!-- back z+ -->
+  <a-box mixin="DM" position="-4.5 2.9 6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <a-box mixin="DM" position="-1.5 2.9 6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <a-box mixin="DM" position=" 1.5 2.9 6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <a-box mixin="DM" position=" 4.5 2.9 6.52" width="1.6" height="2.4" depth="0.08"></a-box>
+  <!-- left x- -->
+  <a-box mixin="DM" position="-6.52 2.9 -4.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <a-box mixin="DM" position="-6.52 2.9 -1.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <a-box mixin="DM" position="-6.52 2.9  1.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <a-box mixin="DM" position="-6.52 2.9  4.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <!-- right x+ -->
+  <a-box mixin="DM" position="6.52 2.9 -4.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <a-box mixin="DM" position="6.52 2.9 -1.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <a-box mixin="DM" position="6.52 2.9  1.5" width="0.08" height="2.4" depth="1.6"></a-box>
+  <a-box mixin="DM" position="6.52 2.9  4.5" width="0.08" height="2.4" depth="1.6"></a-box>
+
+  <!-- inter-floor cornice -->
+  <a-box mixin="M" position="0 4.85 0" width="13.3" height="0.1" depth="13.3"></a-box>
+  <a-box class="gld" mixin="G" position="0 4.92 0" width="13.4" height="0.04" depth="13.4"></a-box>
+
+  <!-- ─── Pillars — all 4 faces (with base + capital) ─── -->
+  <!-- front z=-6.65 -->
+  <a-entity position="-5.4 1 -6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position="-3   1 -6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position=" 0   1 -6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position=" 3   1 -6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position=" 5.4 1 -6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <!-- back z=6.65 -->
+  <a-entity position="-5.4 1 6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position="-3   1 6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position=" 0   1 6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position=" 3   1 6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position=" 5.4 1 6.65"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <!-- left x=-6.65 -->
+  <a-entity position="-6.65 1 -4.5"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position="-6.65 1  0  "><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position="-6.65 1  4.5"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <!-- right x=6.65 -->
+  <a-entity position="6.65 1 -4.5"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position="6.65 1  0  "><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+  <a-entity position="6.65 1  4.5"><a-cylinder mixin="PC" radius="0.16" height="0.18"></a-cylinder><a-cylinder class="gld" mixin="G" radius="0.24" height="3.7" position="0 1.95 0" shadow="cast:true"></a-cylinder><a-cylinder mixin="PC" radius="0.3" height="0.18" position="0 3.85 0"></a-cylinder></a-entity>
+
+  <!-- ─── Arches (half-torus) — all 4 sides ─── -->
+  <!-- front -->
+  <a-torus class="gld" mixin="G" position="-4.2 4.9 -6.53" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position="-1.5 4.9 -6.53" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position=" 1.5 4.9 -6.53" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position=" 4.2 4.9 -6.53" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <!-- back -->
+  <a-torus class="gld" mixin="G" position="-4.2 4.9 6.53" rotation="0 180 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position="-1.5 4.9 6.53" rotation="0 180 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position=" 1.5 4.9 6.53" rotation="0 180 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position=" 4.2 4.9 6.53" rotation="0 180 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <!-- left -->
+  <a-torus class="gld" mixin="G" position="-6.53 4.9 -2.5" rotation="0 90 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position="-6.53 4.9  2.5" rotation="0 90 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <!-- right -->
+  <a-torus class="gld" mixin="G" position="6.53 4.9 -2.5" rotation="0 -90 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-torus class="gld" mixin="G" position="6.53 4.9  2.5" rotation="0 -90 0" radius="1.1" radius-tubular="0.06" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+
+  <!-- ─── Entrance doorways ─── -->
+  <a-box mixin="DM" position="0 2.5 -6.54" width="2.8" height="4" depth="0.12"></a-box>
+  <a-torus class="gld" mixin="G" position="0 4.5 -6.55" radius="1.4" radius-tubular="0.1" arc="180" segments-tubular="22" segments-radial="8"></a-torus>
+  <!-- secondary entrances (all 4 directions for Harmandir Sahib's 4-door symbolism) -->
+  <a-box mixin="DM" position="0 2.5 6.54" width="2.4" height="4" depth="0.12"></a-box>
+  <a-torus class="gld" mixin="G" position="0 4.5 6.55" rotation="0 180 0" radius="1.2" radius-tubular="0.08" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-box mixin="DM" position="-6.54 2.5 0" width="0.12" height="4" depth="2.4"></a-box>
+  <a-torus class="gld" mixin="G" position="-6.55 4.5 0" rotation="0 90 0" radius="1.2" radius-tubular="0.08" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+  <a-box mixin="DM" position="6.54 2.5 0" width="0.12" height="4" depth="2.4"></a-box>
+  <a-torus class="gld" mixin="G" position="6.55 4.5 0" rotation="0 -90 0" radius="1.2" radius-tubular="0.08" arc="180" segments-tubular="20" segments-radial="8"></a-torus>
+
+  <!-- ─── Balcony level ─── -->
+  <a-box class="gld" mixin="G" position="0 4.97 0" width="14" height="0.12" depth="14"></a-box>
+  <!-- balcony railing -->
+  <a-box class="gld" mixin="G" position="0 5.3 -7" width="14" height="0.55" depth="0.05"></a-box>
+  <a-box class="gld" mixin="G" position="0 5.3  7" width="14" height="0.55" depth="0.05"></a-box>
+  <a-box class="gld" mixin="G" position="-7 5.3 0" width="0.05" height="0.55" depth="14"></a-box>
+  <a-box class="gld" mixin="G" position=" 7 5.3 0" width="0.05" height="0.55" depth="14"></a-box>
+  <!-- railing top rail -->
+  <a-box class="gld" mixin="G" position="0 5.6 -7" width="14.1" height="0.05" depth="0.08"></a-box>
+  <a-box class="gld" mixin="G" position="0 5.6  7" width="14.1" height="0.05" depth="0.08"></a-box>
+  <a-box class="gld" mixin="G" position="-7 5.6 0" width="0.08" height="0.05" depth="14.1"></a-box>
+  <a-box class="gld" mixin="G" position=" 7 5.6 0" width="0.08" height="0.05" depth="14.1"></a-box>
+
+  <!-- ─── Layer 2 ─── -->
+  <a-box class="gld" mixin="G" position="0 6.1 0" width="11" height="2" depth="11" shadow="cast:true;receive:true"></a-box>
+  <a-box mixin="M" position="0 7.15 0" width="11.2" height="0.08" depth="11.2"></a-box>
+  <a-box class="gld" mixin="G" position="0 7.22 0" width="11.3" height="0.04" depth="11.3"></a-box>
+
+  <!-- Layer 2 window recesses -->
+  <a-box mixin="DM" position="-3.5 6.1 -5.52" width="1.2" height="1.4" depth="0.06"></a-box>
+  <a-box mixin="DM" position=" 0   6.1 -5.52" width="1.2" height="1.4" depth="0.06"></a-box>
+  <a-box mixin="DM" position=" 3.5 6.1 -5.52" width="1.2" height="1.4" depth="0.06"></a-box>
+  <a-box mixin="DM" position="-3.5 6.1  5.52" width="1.2" height="1.4" depth="0.06"></a-box>
+  <a-box mixin="DM" position=" 0   6.1  5.52" width="1.2" height="1.4" depth="0.06"></a-box>
+  <a-box mixin="DM" position=" 3.5 6.1  5.52" width="1.2" height="1.4" depth="0.06"></a-box>
+
+  <!-- ─── Layer 3 ─── -->
+  <a-box class="gld" mixin="G" position="0 7.9 0" width="9" height="1.3" depth="9" shadow="cast:true;receive:true"></a-box>
+  <a-box class="gld" mixin="G" position="0 8.6 0" width="9.3" height="0.06" depth="9.3"></a-box>
+
+  <!-- ══════ CENTRAL DOME (Onion-shaped) ══════ -->
+  <a-entity position="0 8.8 0">
+    <!-- dome drum -->
+    <a-cylinder class="gld" mixin="G" radius="2.5" height="1.2" segments-radial="20" shadow="cast:true">
+    </a-cylinder>
+    <!-- drum windows -->
+    <a-box mixin="DM" position="0 0 -2.52" width="0.7" height="0.6" depth="0.04"></a-box>
+    <a-box mixin="DM" position="0 0  2.52" width="0.7" height="0.6" depth="0.04"></a-box>
+    <a-box mixin="DM" position="-2.52 0 0" width="0.04" height="0.6" depth="0.7"></a-box>
+    <a-box mixin="DM" position=" 2.52 0 0" width="0.04" height="0.6" depth="0.7"></a-box>
+    <!-- transition ring -->
+    <a-torus class="gld" mixin="G" position="0 0.6 0" rotation="90 0 0"
+      radius="2.55" radius-tubular="0.14" segments-tubular="28" segments-radial="10"></a-torus>
+    <!-- onion dome — stacked scaled spheres for realistic shape -->
+    <a-sphere class="gld" mixin="G" position="0 1.0 0" radius="2.65" scale="1 0.45 1" segments-width="28" segments-height="20"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.6 0" radius="2.4" scale="1 0.7 1" segments-width="28" segments-height="20" shadow="cast:true"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 2.6 0" radius="1.8" scale="1 1.0 1" segments-width="24" segments-height="16"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 3.5 0" radius="1.0" scale="1 1.1 1" segments-width="20" segments-height="14"></a-sphere>
+    <!-- lotus pedestal -->
+    <a-cone class="gld" mixin="G" position="0 4.3 0" radius-bottom="0.7" radius-top="0.25" height="0.5" segments-radial="14"></a-cone>
+    <!-- kalash (inverted pot finial) -->
+    <a-sphere class="gld" mixin="G" position="0 4.7 0" radius="0.28" segments-width="14" segments-height="10"></a-sphere>
+    <a-cylinder class="gld" mixin="G" position="0 5.0 0" radius="0.14" height="0.45" segments-radial="10"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 5.3 0" radius="0.22" segments-width="12" segments-height="8"></a-sphere>
+    <!-- chhatri disc -->
+    <a-cylinder class="gld" mixin="G" position="0 5.5 0" radius="0.38" height="0.04" segments-radial="14"></a-cylinder>
+    <!-- top spire -->
+    <a-cylinder class="gld" mixin="G" position="0 5.75 0" radius="0.04" height="0.5" segments-radial="8"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 6.05 0" radius="0.08"></a-sphere>
+  </a-entity>
+
+  <!-- ─── 4 Corner Kiosks (Chhatris) ─── -->
+  <!-- each: drum + onion dome + finial -->
+  <a-entity position="-5.8 8.4 -5.8">
+    <a-cylinder class="gld" mixin="G" radius="0.95" height="0.65" segments-radial="12"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.6 0" radius="0.9" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.0 0" radius="0.8" scale="1 0.8 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.6 0" radius="0.5" scale="1 0.9 1" segments-width="14" segments-height="10"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 2.1 0" radius-bottom="0.18" radius-top="0" height="0.5"></a-cone>
+    <a-sphere class="gld" mixin="G" position="0 2.45 0" radius="0.1"></a-sphere>
+    <a-cylinder class="gld" mixin="G" position="0 2.65 0" radius="0.03" height="0.3"></a-cylinder>
+  </a-entity>
+  <a-entity position="5.8 8.4 -5.8">
+    <a-cylinder class="gld" mixin="G" radius="0.95" height="0.65" segments-radial="12"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.6 0" radius="0.9" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.0 0" radius="0.8" scale="1 0.8 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.6 0" radius="0.5" scale="1 0.9 1" segments-width="14" segments-height="10"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 2.1 0" radius-bottom="0.18" radius-top="0" height="0.5"></a-cone>
+    <a-sphere class="gld" mixin="G" position="0 2.45 0" radius="0.1"></a-sphere>
+    <a-cylinder class="gld" mixin="G" position="0 2.65 0" radius="0.03" height="0.3"></a-cylinder>
+  </a-entity>
+  <a-entity position="-5.8 8.4 5.8">
+    <a-cylinder class="gld" mixin="G" radius="0.95" height="0.65" segments-radial="12"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.6 0" radius="0.9" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.0 0" radius="0.8" scale="1 0.8 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.6 0" radius="0.5" scale="1 0.9 1" segments-width="14" segments-height="10"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 2.1 0" radius-bottom="0.18" radius-top="0" height="0.5"></a-cone>
+    <a-sphere class="gld" mixin="G" position="0 2.45 0" radius="0.1"></a-sphere>
+    <a-cylinder class="gld" mixin="G" position="0 2.65 0" radius="0.03" height="0.3"></a-cylinder>
+  </a-entity>
+  <a-entity position="5.8 8.4 5.8">
+    <a-cylinder class="gld" mixin="G" radius="0.95" height="0.65" segments-radial="12"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.6 0" radius="0.9" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.0 0" radius="0.8" scale="1 0.8 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 1.6 0" radius="0.5" scale="1 0.9 1" segments-width="14" segments-height="10"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 2.1 0" radius-bottom="0.18" radius-top="0" height="0.5"></a-cone>
+    <a-sphere class="gld" mixin="G" position="0 2.45 0" radius="0.1"></a-sphere>
+    <a-cylinder class="gld" mixin="G" position="0 2.65 0" radius="0.03" height="0.3"></a-cylinder>
+  </a-entity>
+
+  <!-- ─── Mid-edge mini domes ─── -->
+  <a-entity position="0 8.55 -6.2">
+    <a-cylinder class="gld" mixin="G" radius="0.55" height="0.35" segments-radial="10"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.5 0" radius="0.65" scale="1 0.85 1" segments-width="16" segments-height="12"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 1.2 0" radius-bottom="0.12" radius-top="0" height="0.4"></a-cone>
+  </a-entity>
+  <a-entity position="0 8.55 6.2">
+    <a-cylinder class="gld" mixin="G" radius="0.55" height="0.35" segments-radial="10"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.5 0" radius="0.65" scale="1 0.85 1" segments-width="16" segments-height="12"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 1.2 0" radius-bottom="0.12" radius-top="0" height="0.4"></a-cone>
+  </a-entity>
+  <a-entity position="-6.2 8.55 0">
+    <a-cylinder class="gld" mixin="G" radius="0.55" height="0.35" segments-radial="10"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.5 0" radius="0.65" scale="1 0.85 1" segments-width="16" segments-height="12"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 1.2 0" radius-bottom="0.12" radius-top="0" height="0.4"></a-cone>
+  </a-entity>
+  <a-entity position="6.2 8.55 0">
+    <a-cylinder class="gld" mixin="G" radius="0.55" height="0.35" segments-radial="10"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 0.5 0" radius="0.65" scale="1 0.85 1" segments-width="16" segments-height="12"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 1.2 0" radius-bottom="0.12" radius-top="0" height="0.4"></a-cone>
+  </a-entity>
+
+</a-entity><!-- /temple -->
+
+<!-- ═══ Temple Reflection in Water ═══ -->
+<a-entity position="0 -0.12 0" scale="1 -0.55 1">
+  <a-box material="color:#b89800;metalness:0.8;roughness:0.35;opacity:0.2;transparent:true"
+    position="0 2.9 0" width="13" height="3.8" depth="13"></a-box>
+  <a-box material="color:#b89800;metalness:0.8;roughness:0.35;opacity:0.15;transparent:true"
+    position="0 6.1 0" width="11" height="2" depth="11"></a-box>
+  <a-sphere material="color:#b89800;metalness:0.8;roughness:0.35;opacity:0.15;transparent:true"
+    position="0 11 0" radius="2.4" scale="1 0.7 1" segments-width="18" segments-height="12"></a-sphere>
+</a-entity>
+
+<!-- ════════════════════════════════════════
+     CAUSEWAY BRIDGE
+     ════════════════════════════════════════ -->
+<a-entity id="causeway" position="0 0.3 0">
+  <!-- bridge deck -->
+  <a-box mixin="M" position="0 0.22 -23" width="4.2" height="0.44" depth="30" shadow="cast:true;receive:true"></a-box>
+  <a-box class="gld" mixin="G" position="0 0.46 -23" width="4.3" height="0.04" depth="30.1"></a-box>
+  <!-- left railing -->
+  <a-box mixin="M" position="-2.2 0.65 -23" width="0.1" height="0.45" depth="30"></a-box>
+  <a-box class="gld" mixin="G" position="-2.2 0.9 -23" width="0.14" height="0.05" depth="30.1"></a-box>
+  <!-- right railing -->
+  <a-box mixin="M" position="2.2 0.65 -23" width="0.1" height="0.45" depth="30"></a-box>
+  <a-box class="gld" mixin="G" position="2.2 0.9 -23" width="0.14" height="0.05" depth="30.1"></a-box>
+
+  <!-- railing posts — left -->
+  <a-cylinder mixin="M" position="-2.2 0.72 -12" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="-2.2 0.72 -16" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="-2.2 0.72 -20" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="-2.2 0.72 -24" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="-2.2 0.72 -28" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="-2.2 0.72 -32" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="-2.2 0.72 -36" radius="0.08" height="0.55"></a-cylinder>
+  <!-- railing posts — right -->
+  <a-cylinder mixin="M" position="2.2 0.72 -12" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="2.2 0.72 -16" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="2.2 0.72 -20" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="2.2 0.72 -24" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="2.2 0.72 -28" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="2.2 0.72 -32" radius="0.08" height="0.55"></a-cylinder>
+  <a-cylinder mixin="M" position="2.2 0.72 -36" radius="0.08" height="0.55"></a-cylinder>
+  <!-- post caps -->
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -12" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -16" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -20" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -24" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -28" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -32" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="-2.2 1.05 -36" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -12" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -16" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -20" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -24" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -28" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -32" radius="0.06"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="2.2 1.05 -36" radius="0.06"></a-sphere>
+
+  <!-- ═══ DARSHANI DEORI (Entrance Gate) ═══ -->
+  <a-entity position="0 0 -38.5">
+    <!-- gate pillars -->
+    <a-box mixin="M" position="-3.4 3.2 0" width="1.8" height="6.4" depth="1.8" shadow="cast:true"></a-box>
+    <a-box mixin="M" position=" 3.4 3.2 0" width="1.8" height="6.4" depth="1.8" shadow="cast:true"></a-box>
+    <!-- pillar gold trim -->
+    <a-box class="gld" mixin="G" position="-3.4 6.5 0" width="1.9" height="0.08" depth="1.9"></a-box>
+    <a-box class="gld" mixin="G" position=" 3.4 6.5 0" width="1.9" height="0.08" depth="1.9"></a-box>
+    <!-- lintel -->
+    <a-box mixin="M" position="0 6.2 0" width="8.5" height="0.9" depth="2" shadow="cast:true"></a-box>
+    <a-box class="gld" mixin="G" position="0 6.7 0" width="8.7" height="0.08" depth="2.1"></a-box>
+    <!-- entrance arch -->
+    <a-torus class="gld" mixin="G" position="0 5.4 -0.92" radius="2.2" radius-tubular="0.1" arc="180" segments-tubular="24" segments-radial="10"></a-torus>
+    <!-- gate dome -->
+    <a-cylinder class="gld" mixin="G" position="0 7 0" radius="1.8" height="0.8" segments-radial="14"></a-cylinder>
+    <a-sphere class="gld" mixin="G" position="0 7.6 0" radius="1.5" scale="1 0.45 1" segments-width="20" segments-height="14"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 8.1 0" radius="1.3" scale="1 0.75 1" segments-width="20" segments-height="14" shadow="cast:true"></a-sphere>
+    <a-sphere class="gld" mixin="G" position="0 8.8 0" radius="0.7" scale="1 0.9 1" segments-width="16" segments-height="10"></a-sphere>
+    <a-cone class="gld" mixin="G" position="0 9.4 0" radius-bottom="0.2" radius-top="0" height="0.5"></a-cone>
+    <a-sphere class="gld" mixin="G" position="0 9.8 0" radius="0.12"></a-sphere>
+    <a-cylinder class="gld" mixin="G" position="0 10 0" radius="0.03" height="0.3"></a-cylinder>
+    <!-- door opening -->
+    <a-box mixin="DM" position="0 2.8 -0.92" width="3.2" height="5.6" depth="0.1"></a-box>
+  </a-entity>
+</a-entity>
+
+<!-- ════ NISHAN SAHIB ════ -->
+<a-entity position="20 0 -28">
+  <a-cylinder material="color:#ddd;metalness:0.85;roughness:0.12" position="0 7.5 0" radius="0.08" height="15" shadow="cast:true"></a-cylinder>
+  <a-sphere class="gld" mixin="G" position="0 15.2 0" radius="0.28"></a-sphere>
+  <a-plane flag-wave position="0.1 13.5 0.3" width="3.2" height="2.2" segments-width="14" segments-height="10"
+    material="color:#ff8c00;side:double;roughness:0.75;opacity:0.95;transparent:true"></a-plane>
+  <a-cylinder material="color:#ff8c00;roughness:0.75" position="0 14 0" radius="0.13" height="2.8"></a-cylinder>
+</a-entity>
+
+<!-- ════ PERIMETER WALLS ════ -->
+<a-box mixin="M" position="0 2 -37" width="78" height="4" depth="2" shadow="cast:true;receive:true"></a-box>
+<a-box class="gld" mixin="G" position="0 4.05 -37" width="78.2" height="0.1" depth="2.1"></a-box>
+<a-box mixin="M" position="0 4.2 -37" width="78" height="0.3" depth="1.8"></a-box>
+<a-box mixin="M" position="0 2 37" width="78" height="4" depth="2" shadow="cast:true;receive:true"></a-box>
+<a-box class="gld" mixin="G" position="0 4.05 37" width="78.2" height="0.1" depth="2.1"></a-box>
+<a-box mixin="M" position="0 4.2 37" width="78" height="0.3" depth="1.8"></a-box>
+<a-box mixin="M" position="-37 2 0" width="2" height="4" depth="78" shadow="cast:true;receive:true"></a-box>
+<a-box class="gld" mixin="G" position="-37 4.05 0" width="2.1" height="0.1" depth="78.2"></a-box>
+<a-box mixin="M" position="-37 4.2 0" width="1.8" height="0.3" depth="78"></a-box>
+<a-box mixin="M" position="37 2 0" width="2" height="4" depth="78" shadow="cast:true;receive:true"></a-box>
+<a-box class="gld" mixin="G" position="37 4.05 0" width="2.1" height="0.1" depth="78.2"></a-box>
+<a-box mixin="M" position="37 4.2 0" width="1.8" height="0.3" depth="78"></a-box>
+
+<!-- colonnade pillars along north wall -->
+<a-cylinder mixin="M" position="-30 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position="-22 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position="-14 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position=" -6 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position="  6 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position=" 14 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position=" 22 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+<a-cylinder mixin="M" position=" 30 2 -35.5" radius="0.32" height="4" shadow="cast:true"></a-cylinder>
+
+<!-- ════ 4 CORNER TOWERS ════ -->
+<a-entity position="-37 0 -37">
+  <a-cylinder mixin="M" radius="2.5" height="8" position="0 4 0" shadow="cast:true" segments-radial="14"></a-cylinder>
+  <a-box class="gld" mixin="G" position="0 8.1 0" width="5.4" height="0.1" depth="5.4"></a-box>
+  <a-cylinder class="gld" mixin="G" position="0 8.45 0" radius="1.7" height="0.6" segments-radial="12"></a-cylinder>
+  <a-sphere class="gld" mixin="G" position="0 9.0 0" radius="1.5" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 9.4 0" radius="1.3" scale="1 0.75 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 10.0 0" radius="0.65" scale="1 0.85 1" segments-width="14" segments-height="10"></a-sphere>
+  <a-cone class="gld" mixin="G" position="0 10.6 0" radius-bottom="0.16" radius-top="0" height="0.5"></a-cone>
+  <a-sphere class="gld" mixin="G" position="0 10.95 0" radius="0.1"></a-sphere>
+  <a-cylinder class="gld" mixin="G" position="0 11.15 0" radius="0.03" height="0.3"></a-cylinder>
+</a-entity>
+<a-entity position="37 0 -37">
+  <a-cylinder mixin="M" radius="2.5" height="8" position="0 4 0" shadow="cast:true" segments-radial="14"></a-cylinder>
+  <a-box class="gld" mixin="G" position="0 8.1 0" width="5.4" height="0.1" depth="5.4"></a-box>
+  <a-cylinder class="gld" mixin="G" position="0 8.45 0" radius="1.7" height="0.6" segments-radial="12"></a-cylinder>
+  <a-sphere class="gld" mixin="G" position="0 9.0 0" radius="1.5" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 9.4 0" radius="1.3" scale="1 0.75 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 10.0 0" radius="0.65" scale="1 0.85 1" segments-width="14" segments-height="10"></a-sphere>
+  <a-cone class="gld" mixin="G" position="0 10.6 0" radius-bottom="0.16" radius-top="0" height="0.5"></a-cone>
+  <a-sphere class="gld" mixin="G" position="0 10.95 0" radius="0.1"></a-sphere>
+  <a-cylinder class="gld" mixin="G" position="0 11.15 0" radius="0.03" height="0.3"></a-cylinder>
+</a-entity>
+<a-entity position="-37 0 37">
+  <a-cylinder mixin="M" radius="2.5" height="8" position="0 4 0" shadow="cast:true" segments-radial="14"></a-cylinder>
+  <a-box class="gld" mixin="G" position="0 8.1 0" width="5.4" height="0.1" depth="5.4"></a-box>
+  <a-cylinder class="gld" mixin="G" position="0 8.45 0" radius="1.7" height="0.6" segments-radial="12"></a-cylinder>
+  <a-sphere class="gld" mixin="G" position="0 9.0 0" radius="1.5" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 9.4 0" radius="1.3" scale="1 0.75 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 10.0 0" radius="0.65" scale="1 0.85 1" segments-width="14" segments-height="10"></a-sphere>
+  <a-cone class="gld" mixin="G" position="0 10.6 0" radius-bottom="0.16" radius-top="0" height="0.5"></a-cone>
+  <a-sphere class="gld" mixin="G" position="0 10.95 0" radius="0.1"></a-sphere>
+  <a-cylinder class="gld" mixin="G" position="0 11.15 0" radius="0.03" height="0.3"></a-cylinder>
+</a-entity>
+<a-entity position="37 0 37">
+  <a-cylinder mixin="M" radius="2.5" height="8" position="0 4 0" shadow="cast:true" segments-radial="14"></a-cylinder>
+  <a-box class="gld" mixin="G" position="0 8.1 0" width="5.4" height="0.1" depth="5.4"></a-box>
+  <a-cylinder class="gld" mixin="G" position="0 8.45 0" radius="1.7" height="0.6" segments-radial="12"></a-cylinder>
+  <a-sphere class="gld" mixin="G" position="0 9.0 0" radius="1.5" scale="1 0.45 1" segments-width="18" segments-height="12"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 9.4 0" radius="1.3" scale="1 0.75 1" segments-width="18" segments-height="12" shadow="cast:true"></a-sphere>
+  <a-sphere class="gld" mixin="G" position="0 10.0 0" radius="0.65" scale="1 0.85 1" segments-width="14" segments-height="10"></a-sphere>
+  <a-cone class="gld" mixin="G" position="0 10.6 0" radius-bottom="0.16" radius-top="0" height="0.5"></a-cone>
+  <a-sphere class="gld" mixin="G" position="0 10.95 0" radius="0.1"></a-sphere>
+  <a-cylinder class="gld" mixin="G" position="0 11.15 0" radius="0.03" height="0.3"></a-cylinder>
+</a-entity>
+
+<!-- ════ DIYAS (Oil Lamps) ════ -->
+<!-- sarovar edge diyas -->
+<a-entity class="diya" position="-22 0.38 -33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="-14 0.38 -33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="-6 0.38 -33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="6 0.38 -33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="14 0.38 -33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="22 0.38 -33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<!-- south side diyas -->
+<a-entity class="diya" position="-16 0.38 33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="0 0.38 33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<a-entity class="diya" position="16 0.38 33"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.12" height="0.07"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.08 0" radius="0.055"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.08;distance:3.5;decay:2" position="0 0.1 0"></a-entity></a-entity>
+<!-- causeway diyas -->
+<a-entity class="diya" position="-2.2 1.25 -20"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.1" height="0.06"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.07 0" radius="0.045"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.06;distance:3;decay:2" position="0 0.08 0"></a-entity></a-entity>
+<a-entity class="diya" position="2.2 1.25 -20"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.1" height="0.06"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.07 0" radius="0.045"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.06;distance:3;decay:2" position="0 0.08 0"></a-entity></a-entity>
+<a-entity class="diya" position="-2.2 1.25 -28"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.1" height="0.06"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.07 0" radius="0.045"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.06;distance:3;decay:2" position="0 0.08 0"></a-entity></a-entity>
+<a-entity class="diya" position="2.2 1.25 -28"><a-cylinder material="color:#c27035;roughness:0.85" radius="0.1" height="0.06"></a-cylinder><a-sphere class="dflame" material="shader:flat;color:#ffaa22;opacity:0.3;transparent:true" position="0 0.07 0" radius="0.045"></a-sphere><a-entity class="dlight" light="type:point;color:#ff9500;intensity:0.06;distance:3;decay:2" position="0 0.08 0"></a-entity></a-entity>
+
+<!-- ════ LOTUS FLOWERS ════ -->
+<a-entity lotus-bob="spd:0.35" position="-9 0.1 -12">
+  <a-sphere material="color:#e8bdd0;roughness:0.55" radius="0.14" scale="1 0.4 1"></a-sphere>
+  <a-sphere material="color:#f0d8e5;opacity:0.85;transparent:true" radius="0.32" scale="1 0.18 1" position="0 -0.02 0"></a-sphere>
+  <a-sphere material="color:#f5e8ef;opacity:0.6;transparent:true" radius="0.48" scale="1 0.1 1" position="0 -0.04 0"></a-sphere>
+</a-entity>
+<a-entity lotus-bob="spd:0.28" position="12 0.1 10">
+  <a-sphere material="color:#e8bdd0;roughness:0.55" radius="0.14" scale="1 0.4 1"></a-sphere>
+  <a-sphere material="color:#f0d8e5;opacity:0.85;transparent:true" radius="0.32" scale="1 0.18 1" position="0 -0.02 0"></a-sphere>
+  <a-sphere material="color:#f5e8ef;opacity:0.6;transparent:true" radius="0.48" scale="1 0.1 1" position="0 -0.04 0"></a-sphere>
+</a-entity>
+<a-entity lotus-bob="spd:0.42" position="-18 0.1 15">
+  <a-sphere material="color:#fff;roughness:0.55" radius="0.12" scale="1 0.4 1"></a-sphere>
+  <a-sphere material="color:#fff8f8;opacity:0.85;transparent:true" radius="0.28" scale="1 0.18 1" position="0 -0.02 0"></a-sphere>
+  <a-sphere material="color:#fff;opacity:0.6;transparent:true" radius="0.42" scale="1 0.1 1" position="0 -0.04 0"></a-sphere>
+</a-entity>
+<a-entity lotus-bob="spd:0.38" position="20 0.1 -8">
+  <a-sphere material="color:#ecc8dc;roughness:0.55" radius="0.13" scale="1 0.4 1"></a-sphere>
+  <a-sphere material="color:#f2dce9;opacity:0.85;transparent:true" radius="0.3" scale="1 0.18 1" position="0 -0.02 0"></a-sphere>
+  <a-sphere material="color:#f8ecf2;opacity:0.6;transparent:true" radius="0.44" scale="1 0.1 1" position="0 -0.04 0"></a-sphere>
+</a-entity>
+
+<!-- ════ TREES ════ -->
+<a-entity position="-44 0 -44">
+  <a-cylinder material="color:#5a3a1e;roughness:0.92" radius="0.35" height="4.5" position="0 2.25 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#2d6b38;roughness:0.88" radius="2.8" position="0 6 0" shadow="cast:true"></a-sphere>
+  <a-sphere material="color:#3a7d44;roughness:0.88;opacity:0.7;transparent:true" radius="3.2" position="0.5 5.5 0.5" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="44 0 -44">
+  <a-cylinder material="color:#5a3a1e;roughness:0.92" radius="0.28" height="3.8" position="0 1.9 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#3a7d44;roughness:0.88" radius="2.4" position="0 5 0" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="-46 0 44">
+  <a-cylinder material="color:#6a4428;roughness:0.92" radius="0.32" height="5" position="0 2.5 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#2d6b38;roughness:0.88" radius="3" position="0 6.5 0" shadow="cast:true"></a-sphere>
+  <a-sphere material="color:#3a8048;roughness:0.88;opacity:0.65;transparent:true" radius="3.4" position="-0.5 6 -0.5" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="46 0 44">
+  <a-cylinder material="color:#5a3a1e;roughness:0.92" radius="0.25" height="3.2" position="0 1.6 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#3a7d44;roughness:0.88" radius="2.2" position="0 4.2 0" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="-48 0 0">
+  <a-cylinder material="color:#5a3a1e;roughness:0.92" radius="0.38" height="5.5" position="0 2.75 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#2d6b38;roughness:0.88" radius="3.2" position="0 7 0" shadow="cast:true"></a-sphere>
+  <a-sphere material="color:#3a8048;roughness:0.88;opacity:0.6;transparent:true" radius="3.5" position="0.6 6.5 0.3" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="48 0 0">
+  <a-cylinder material="color:#6a4428;roughness:0.92" radius="0.3" height="4" position="0 2 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#3a7d44;roughness:0.88" radius="2.6" position="0 5.5 0" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="-42 0 20">
+  <a-cylinder material="color:#5a3a1e;roughness:0.92" radius="0.22" height="3" position="0 1.5 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#3a8048;roughness:0.88" radius="2" position="0 4 0" shadow="cast:true"></a-sphere>
+</a-entity>
+<a-entity position="42 0 -20">
+  <a-cylinder material="color:#5a3a1e;roughness:0.92" radius="0.26" height="3.5" position="0 1.75 0" shadow="cast:true"></a-cylinder>
+  <a-sphere material="color:#2d6b38;roughness:0.88" radius="2.3" position="0 4.5 0" shadow="cast:true"></a-sphere>
+</a-entity>
+
+<!-- ════ BIRDS ════ -->
+<a-entity bird-fly="r:38;h:24;spd:0.07;off:0">
+  <a-cone material="color:#1a1a1a;shader:flat" radius-bottom="0.06" radius-top="0" height="0.3" rotation="-90 0 0"></a-cone>
+  <a-plane class="bw" material="color:#111;shader:flat;side:double" width="0.45" height="0.04" position="-0.12 0 0"></a-plane>
+  <a-plane class="bw" material="color:#111;shader:flat;side:double" width="0.45" height="0.04" position="0.12 0 0"></a-plane>
+</a-entity>
+<a-entity bird-fly="r:42;h:26;spd:0.055;off:2.1">
+  <a-cone material="color:#222;shader:flat" radius-bottom="0.06" radius-top="0" height="0.3" rotation="-90 0 0"></a-cone>
+  <a-plane class="bw" material="color:#1a1a1a;shader:flat;side:double" width="0.45" height="0.04" position="-0.12 0 0"></a-plane>
+  <a-plane class="bw" material="color:#1a1a1a;shader:flat;side:double" width="0.45" height="0.04" position="0.12 0 0"></a-plane>
+</a-entity>
+<a-entity bird-fly="r:30;h:20;spd:0.1;off:4.3">
+  <a-cone material="color:#1a1a1a;shader:flat" radius-bottom="0.05" radius-top="0" height="0.25" rotation="-90 0 0"></a-cone>
+  <a-plane class="bw" material="color:#111;shader:flat;side:double" width="0.38" height="0.035" position="-0.1 0 0"></a-plane>
+  <a-plane class="bw" material="color:#111;shader:flat;side:double" width="0.38" height="0.035" position="0.1 0 0"></a-plane>
+</a-entity>
+<a-entity bird-fly="r:46;h:28;spd:0.045;off:1.2">
+  <a-cone material="color:#222;shader:flat" radius-bottom="0.07" radius-top="0" height="0.35" rotation="-90 0 0"></a-cone>
+  <a-plane class="bw" material="color:#1a1a1a;shader:flat;side:double" width="0.5" height="0.04" position="-0.14 0 0"></a-plane>
+  <a-plane class="bw" material="color:#1a1a1a;shader:flat;side:double" width="0.5" height="0.04" position="0.14 0 0"></a-plane>
+</a-entity>
+<a-entity bird-fly="r:34;h:22;spd:0.09;off:5.5">
+  <a-cone material="color:#1a1a1a;shader:flat" radius-bottom="0.05" radius-top="0" height="0.25" rotation="-90 0 0"></a-cone>
+  <a-plane class="bw" material="color:#111;shader:flat;side:double" width="0.38" height="0.035" position="-0.1 0 0"></a-plane>
+  <a-plane class="bw" material="color:#111;shader:flat;side:double" width="0.38" height="0.035" position="0.1 0 0"></a-plane>
+</a-entity>
+
+<!-- ════ GOLDEN DUST PARTICLES ════ -->
+<a-entity gold-dust></a-entity>
+
+<!-- ════ CAMERA ════ -->
+<a-entity id="rig" position="0 1.6 -42">
+  <a-entity id="cam" camera look-controls wasd-controls="acceleration:18"></a-entity>
+</a-entity>
+
+</a-scene>
+</body>
+</html>
