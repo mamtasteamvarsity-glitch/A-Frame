@@ -1,229 +1,1256 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Hybrid Movement (Keyboard + Quest)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mamta | Modern Professional STEAM Portfolio</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- A-Frame core -->
-    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-
-    <!-- A-Frame Extras (for movement-controls: keyboard, gamepad, etc.) -->
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
-    <script src="https://unpkg.com/@c-frame/aframe-physics-system@4.2.3/dist/aframe-physics-system.min.js"></script>
-</head>
-
-<!-- Custom component: Quest right thumbstick moves the rig -->
-<script>
-    AFRAME.registerComponent('thumbstick-move', {
-        schema: {
-            speed: { type: 'number', default: 3 }  // movement units per second
-        },
-
-        init: function () {
-            this.direction = new THREE.Vector2(0, 0);
-            this.rig = document.querySelector('#rig');
-            this.head = document.querySelector('#head');
-
-            // Listen to thumbstick from this controller (right hand)
-            this.el.addEventListener('thumbstickmoved', (evt) => {
-                const x = evt.detail.x; // left/right
-                const y = evt.detail.y; // forward/back
-
-                // Apply a small deadzone so it stops cleanly
-                if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) {
-                    this.direction.set(0, 0);
-                } else {
-                    this.direction.set(x, y);
-                }
-            });
-        },
-
-        tick: function (time, delta) {
-            if (!this.rig || !this.head) return;
-            if (this.direction.lengthSq() === 0) return;
-
-            const dt = delta / 1000;
-            const speed = this.data.speed;
-
-            // Get forward direction from head (camera)
-            const headObj = this.head.object3D;
-            const forward = new THREE.Vector3(0, 0, -1);
-            forward.applyQuaternion(headObj.quaternion);
-            forward.y = 0;          // keep movement on ground only
-            forward.normalize();
-
-            const right = new THREE.Vector3().crossVectors(
-                forward,
-                new THREE.Vector3(0, 1, 0)
-            ).normalize();
-
-            const move = new THREE.Vector3();
-
-            // Thumbstick: x = left/right, y = forward/back (note: y is inverted)
-            move.addScaledVector(forward, -this.direction.y * speed * dt);
-            move.addScaledVector(right, this.direction.x * speed * dt);
-
-            this.rig.object3D.position.add(move);
+    <style>
+        /* ========================================= */
+        /* Ultra Modern Portfolio — Unique Slides    */
+        /* ========================================= */
+        :root {
+            --primary: #4A6FA5;
+            --secondary: #B56576;
+            --accent: #E6B566;
+            --mint: #6FBEAA;
+            --lavender: #9B8EC0;
+            --coral: #E07A5F;
+            --text-dark: #2B2D42;
+            --text-light: #F8F9FA;
+            --heading-font: 'Space Grotesk', sans-serif;
+            --body-font: 'Inter', sans-serif;
+            --code-font: 'JetBrains Mono', monospace;
         }
-    });
-</script>
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--body-font);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+            min-height: 100vh;
+            background: #EDE8F2;
+        }
+
+        /* ---- Floating Geometric Shapes ---- */
+        .geo-shape {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            animation: floatGeo 25s infinite ease-in-out;
+        }
+        .geo-shape.circle { width: 80px; height: 80px; border-radius: 50%; border: 2px solid rgba(155, 142, 192, 0.3); background: rgba(155, 142, 192, 0.06); }
+        .geo-shape.ring { width: 50px; height: 50px; border-radius: 50%; border: 3px solid rgba(181, 101, 118, 0.25); }
+        .geo-shape.diamond { width: 35px; height: 35px; background: rgba(230, 181, 102, 0.15); border: 2px solid rgba(230, 181, 102, 0.3); transform: rotate(45deg); }
+        .geo-shape.dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(107, 190, 170, 0.45); }
+        .geo-shape.cross { width: 24px; height: 24px; }
+        .geo-shape.cross::before, .geo-shape.cross::after { content: ''; position: absolute; background: rgba(74, 111, 165, 0.25); }
+        .geo-shape.cross::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+        .geo-shape.cross::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+        .geo-shape.line { width: 80px; height: 2px; background: linear-gradient(90deg, transparent, rgba(155, 142, 192, 0.3), transparent); }
+
+        @keyframes floatGeo {
+            0% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.5); }
+            15% { opacity: 0.6; transform: translate(20px, -50px) rotate(45deg) scale(1); }
+            50% { opacity: 0.4; transform: translate(-30px, -140px) rotate(135deg) scale(1.1); }
+            85% { opacity: 0.2; transform: translate(50px, -220px) rotate(270deg) scale(0.7); }
+            100% { opacity: 0; transform: translate(70px, -300px) rotate(360deg) scale(0.3); }
+        }
+
+        /* ---- Navigation — Floating Pill ---- */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            max-width: 92vw;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50px;
+            z-index: 1000;
+            padding: 8px 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        nav:hover { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1); }
+        nav .nav-container { display: flex; align-items: center; gap: 30px; }
+        nav .logo {
+            font-family: var(--heading-font);
+            font-size: 1.15em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        nav ul { list-style: none; display: flex; gap: 4px; }
+        nav ul li a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            font-size: 0.82em;
+            padding: 6px 14px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            display: block;
+            letter-spacing: 0.02em;
+        }
+        nav ul li a:hover {
+            background: linear-gradient(135deg, rgba(74, 111, 165, 0.1), rgba(181, 101, 118, 0.08));
+            color: var(--primary);
+        }
+
+        /* ---- Full Page Slides ---- */
+        .slide {
+            height: 100vh;
+            min-height: 100vh;
+            width: 100vw;
+            margin: 0; padding: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        /* ============================================ */
+        /* HERO — Full Screen, Big & Bold              */
+        /* ============================================ */
+        #hero-slide {
+            background:
+                radial-gradient(ellipse at 25% 35%, rgba(74, 111, 165, 0.35) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 65%, rgba(181, 101, 118, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 15%, rgba(230, 181, 102, 0.25) 0%, transparent 45%),
+                radial-gradient(ellipse at 60% 85%, rgba(107, 190, 170, 0.2) 0%, transparent 45%);
+            background-color: #D9D0E3;
+            animation: heroMesh 14s ease-in-out infinite alternate;
+        }
+        @keyframes heroMesh {
+            0% { background-color: #D9D0E3; }
+            33% { background-color: #D5DDE8; }
+            66% { background-color: #DBDAE5; }
+            100% { background-color: #E0D5D8; }
+        }
+
+        .hero-layout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+            padding: 0 30px;
+            z-index: 10;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 8px 22px;
+            border-radius: 50px;
+            font-size: 0.82em;
+            font-weight: 600;
+            color: var(--primary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            animation: fadeSlideDown 1s ease 0.2s both;
+        }
+
+        .hero-name {
+            font-family: var(--heading-font);
+            font-size: 7em;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--text-dark) 0%, var(--primary) 50%, var(--secondary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            animation: fadeSlideDown 1s ease 0.4s both;
+        }
+
+        .hero-title {
+            font-size: 1.4em;
+            font-weight: 400;
+            color: var(--text-dark);
+            opacity: 0.75;
+            margin-bottom: 15px;
+            animation: fadeSlideDown 1s ease 0.6s both;
+        }
+
+        .hero-desc {
+            font-size: 1em;
+            color: var(--text-dark);
+            opacity: 0.5;
+            max-width: 500px;
+            margin-bottom: 40px;
+            animation: fadeSlideDown 1s ease 0.8s both;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            gap: 15px;
+            animation: fadeSlideDown 1s ease 1s both;
+        }
+
+        .hero-cta a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            letter-spacing: 0.02em;
+        }
+
+        .cta-primary {
+            background: linear-gradient(135deg, var(--primary), var(--lavender));
+            color: white;
+            box-shadow: 0 8px 30px rgba(74, 111, 165, 0.3);
+        }
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(74, 111, 165, 0.4);
+        }
+
+        .cta-secondary {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            color: var(--text-dark);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .cta-secondary:hover {
+            background: rgba(255, 255, 255, 0.75);
+            transform: translateY(-2px);
+        }
+
+        /* Hero scroll indicator */
+        .scroll-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            animation: bounce 2s ease-in-out infinite;
+            z-index: 10;
+        }
+        .scroll-hint span {
+            font-size: 0.7em;
+            color: var(--text-dark);
+            opacity: 0.4;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .scroll-hint .arrow {
+            width: 20px; height: 20px;
+            border-right: 2px solid var(--text-dark);
+            border-bottom: 2px solid var(--text-dark);
+            transform: rotate(45deg);
+            opacity: 0.3;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        @keyframes fadeSlideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================ */
+        /* ABOUT — Split Layout with Stats             */
+        /* ============================================ */
+        #about-slide {
+            background:
+                radial-gradient(ellipse at 15% 75%, rgba(107, 190, 170, 0.3) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 25%, rgba(155, 142, 192, 0.25) 0%, transparent 50%);
+            background-color: #EBE6F0;
+        }
+
+        .about-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 50px;
+            max-width: 1000px;
+            width: 92%;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .about-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .about-avatar {
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 280px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(74, 111, 165, 0.15), rgba(181, 101, 118, 0.1));
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5em;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+        }
+
+        .about-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 14px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .stat-box .stat-num {
+            font-family: var(--heading-font);
+            font-size: 1.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-box .stat-label {
+            font-size: 0.72em;
+            color: var(--text-dark);
+            opacity: 0.6;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .about-text-card {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            padding: 45px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06);
+        }
+        .about-text-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--mint), var(--primary), var(--lavender));
+        }
+        .about-text-card p { font-size: 0.95em; margin-bottom: 12px; opacity: 0.85; }
+        .about-text-card p:last-child { margin-bottom: 0; }
+
+        /* ============================================ */
+        /* EXPERIENCE — Card Grid                      */
+        /* ============================================ */
+        #experience-slide {
+            background:
+                radial-gradient(ellipse at 70% 15%, rgba(224, 122, 95, 0.2) 0%, transparent 55%),
+                radial-gradient(ellipse at 25% 75%, rgba(74, 111, 165, 0.2) 0%, transparent 50%);
+            background-color: #E9E3E0;
+        }
+
+        .exp-layout {
+            max-width: 950px;
+            width: 92%;
+            z-index: 10;
+        }
+
+        .exp-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .exp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .exp-card {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.05);
+        }
+        .exp-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.1);
+        }
+        .exp-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+        .exp-card:nth-child(1)::before { background: linear-gradient(90deg, var(--primary), var(--mint)); }
+        .exp-card:nth-child(2)::before { background: linear-gradient(90deg, var(--secondary), var(--accent)); }
+
+        .exp-card .card-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+        .exp-card:nth-child(1) .card-icon { background: rgba(74, 111, 165, 0.12); }
+        .exp-card:nth-child(2) .card-icon { background: rgba(181, 101, 118, 0.12); }
+
+        .exp-card h3 {
+            font-family: var(--heading-font);
+            font-size: 1.1em;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .exp-card .exp-duration {
+            font-size: 0.78em;
+            color: var(--lavender);
+            font-weight: 500;
+            background: rgba(155, 142, 192, 0.1);
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .exp-card ul { list-style: none; padding: 0; margin: 0; }
+        .exp-card ul li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+        .exp-card ul li::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 9px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--mint), var(--primary));
+        }
+
+        /* ============================================ */
+        /* PROJECTS — Stacked Cards                    */
+        /* ============================================ */
+        #projects-slide {
+            background:
+                radial-gradient(ellipse at 35% 25%, rgba(230, 181, 102, 0.25) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 80%, rgba(107, 190, 170, 0.2) 0%, transparent 50%);
+            background-color: #E5E6E0;
+        }
+
+        .projects-layout {
+            max-width: 1000px;
+            width: 92%;
+            z-index: 10;
+        }
+
+        .projects-header { text-align: center; margin-bottom: 30px; }
+
+        .project-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .project-card {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.05);
+        }
+        .project-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .project-num {
+            font-family: var(--heading-font);
+            font-size: 3em;
+            font-weight: 800;
+            line-height: 1;
+            opacity: 0.06;
+            position: absolute;
+            top: 15px; right: 20px;
+        }
+
+        .project-card h3 {
+            font-family: var(--heading-font);
+            font-size: 1.1em;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .project-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .project-tech span {
+            font-family: var(--code-font);
+            background: rgba(74, 111, 165, 0.08);
+            color: var(--primary);
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 0.75em;
+            font-weight: 500;
+            border: 1px solid rgba(74, 111, 165, 0.1);
+        }
+
+        .project-card p {
+            font-size: 0.88em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .project-card ul { list-style: none; padding: 0; margin: 0; }
+        .project-card ul li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 5px;
+            font-size: 0.83em;
+            opacity: 0.78;
+        }
+        .project-card ul li::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 9px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+        .project-card:nth-child(1) ul li::before { background: linear-gradient(135deg, var(--accent), var(--coral)); }
+        .project-card:nth-child(2) ul li::before { background: linear-gradient(135deg, var(--mint), var(--primary)); }
+
+        /* ============================================ */
+        /* SKILLS — Bento Grid                        */
+        /* ============================================ */
+        #skills-edu-slide {
+            background:
+                radial-gradient(ellipse at 55% 35%, rgba(155, 142, 192, 0.25) 0%, transparent 55%),
+                radial-gradient(ellipse at 20% 80%, rgba(181, 101, 118, 0.15) 0%, transparent 50%);
+            background-color: #E6E0EA;
+        }
+
+        .skills-layout {
+            max-width: 1000px;
+            width: 92%;
+            z-index: 10;
+        }
+
+        .skills-header { text-align: center; margin-bottom: 25px; }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: minmax(60px, auto);
+            gap: 12px;
+        }
+
+        .bento-item {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.82em;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        .bento-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .bento-item:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+        .bento-item:hover::after { opacity: 1; }
+        .bento-item span { position: relative; z-index: 2; }
+
+        .bento-item:nth-child(1) { grid-column: span 2; }
+        .bento-item:nth-child(1)::after { background: linear-gradient(135deg, rgba(74, 111, 165, 0.12), rgba(155, 142, 192, 0.08)); }
+        .bento-item:nth-child(2)::after { background: rgba(107, 190, 170, 0.12); }
+        .bento-item:nth-child(3)::after { background: rgba(181, 101, 118, 0.12); }
+        .bento-item:nth-child(4) { grid-column: span 2; }
+        .bento-item:nth-child(4)::after { background: linear-gradient(135deg, rgba(230, 181, 102, 0.12), rgba(224, 122, 95, 0.08)); }
+        .bento-item:nth-child(5)::after { background: rgba(155, 142, 192, 0.12); }
+        .bento-item:nth-child(6)::after { background: rgba(74, 111, 165, 0.12); }
+        .bento-item:nth-child(7) { grid-column: span 2; }
+        .bento-item:nth-child(7)::after { background: linear-gradient(135deg, rgba(107, 190, 170, 0.12), rgba(74, 111, 165, 0.08)); }
+        .bento-item:nth-child(8)::after { background: rgba(224, 122, 95, 0.12); }
+        .bento-item:nth-child(9)::after { background: rgba(230, 181, 102, 0.12); }
+        .bento-item:nth-child(10)::after { background: rgba(181, 101, 118, 0.12); }
+        .bento-item:nth-child(11) { grid-column: span 2; }
+        .bento-item:nth-child(11)::after { background: linear-gradient(135deg, rgba(155, 142, 192, 0.12), rgba(107, 190, 170, 0.08)); }
+
+        .edu-section {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .edu-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
+        }
+        .edu-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+        .edu-card:nth-child(1)::before { background: linear-gradient(90deg, var(--primary), var(--mint)); }
+        .edu-card:nth-child(2)::before { background: linear-gradient(90deg, var(--secondary), var(--accent)); }
+        .edu-card h3 { font-family: var(--heading-font); font-size: 1em; color: var(--text-dark); margin: 0 0 4px; }
+        .edu-card p { font-size: 0.82em; color: var(--lavender); font-weight: 500; margin: 0; }
+
+        /* ============================================ */
+        /* CONTACT — Big CTA Section                  */
+        /* ============================================ */
+        #contact-slide {
+            background:
+                radial-gradient(ellipse at 50% 50%, rgba(74, 111, 165, 0.4) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 15%, rgba(107, 190, 170, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 85%, rgba(230, 181, 102, 0.2) 0%, transparent 50%);
+            background-color: #3B5075;
+        }
+
+        .contact-layout {
+            text-align: center;
+            max-width: 650px;
+            width: 92%;
+            z-index: 10;
+        }
+
+        .contact-layout h2 {
+            font-family: var(--heading-font);
+            font-size: 2.8em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            line-height: 1.15;
+        }
+        .contact-layout h2::after { display: none; }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .contact-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 14px 28px;
+            border-radius: 16px;
+            color: var(--text-light);
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+        }
+        .contact-item:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-2px);
+        }
+        .contact-item .icon { font-size: 1.2em; }
+
+        .contact-footer {
+            font-size: 1em;
+            color: var(--accent);
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        /* ---- Common h2 for section headers ---- */
+        h2 {
+            font-family: var(--heading-font);
+            font-size: 2em;
+            font-weight: 700;
+            color: transparent;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; background-clip: text;
+            margin: 0 0 10px;
+            padding-bottom: 12px;
+            position: relative;
+            border-bottom: none;
+        }
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 50px; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--coral));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .section-subtitle {
+            font-size: 0.88em;
+            color: var(--text-dark);
+            opacity: 0.5;
+            font-weight: 400;
+        }
+
+        code {
+            font-family: var(--code-font);
+            background: rgba(74, 111, 165, 0.08);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 500;
+            border: 1px solid rgba(74, 111, 165, 0.1);
+        }
+
+        /* ---- Slide Navigation ---- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 999;
+        }
+        .slide-nav-btn {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(15px);
+            color: var(--text-dark);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 1.1em;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+        .slide-nav-btn:hover {
+            background: linear-gradient(135deg, var(--primary), var(--lavender));
+            color: white; border-color: transparent;
+            transform: scale(1.08);
+            box-shadow: 0 8px 30px rgba(74, 111, 165, 0.3);
+        }
+
+        .slide-indicator {
+            position: fixed;
+            right: 25px; top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 999;
+        }
+        .indicator-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(74, 111, 165, 0.15);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(74, 111, 165, 0.2);
+        }
+        .indicator-dot.active {
+            width: 12px; height: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+            box-shadow: 0 0 12px rgba(74, 111, 165, 0.4);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 85px; right: 25px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px);
+            color: var(--text-dark);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.82em;
+            font-weight: 600;
+            z-index: 999;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        html.slide-mode { scroll-behavior: auto; overflow: hidden; }
+        body.slide-mode { overflow: hidden; }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            nav { top: 10px; padding: 6px 15px; border-radius: 30px; }
+            nav ul { display: none; }
+            nav .nav-container { justify-content: center; }
+
+            .hero-name { font-size: 3.5em; }
+            .hero-title { font-size: 1.1em; }
+            .hero-cta { flex-direction: column; gap: 10px; }
+            .hero-cta a { padding: 12px 24px; font-size: 0.85em; }
+
+            .about-layout { grid-template-columns: 1fr; gap: 25px; text-align: center; }
+            .about-avatar { max-width: 180px; margin: 0 auto; font-size: 3.5em; }
+            .about-text-card { padding: 30px; }
+
+            .exp-grid { grid-template-columns: 1fr; }
+            .exp-card { padding: 22px; }
+
+            .project-cards { grid-template-columns: 1fr; }
+            .project-card { padding: 22px; }
+
+            .bento-grid { grid-template-columns: 1fr 1fr; }
+            .bento-item:nth-child(1), .bento-item:nth-child(4),
+            .bento-item:nth-child(7), .bento-item:nth-child(11) { grid-column: span 2; }
+
+            .edu-section { grid-template-columns: 1fr; }
+
+            .contact-layout h2 { font-size: 2em; }
+
+            .slide-navigation { bottom: 20px; gap: 8px; }
+            .slide-nav-btn { width: 38px; height: 38px; font-size: 0.95em; border-radius: 12px; }
+            .slide-counter { right: 15px; top: 75px; font-size: 0.75em; }
+            .slide-indicator { right: 15px; }
+            .indicator-dot { width: 8px; height: 8px; }
+            h2 { font-size: 1.6em; }
+        }
+
+    </style>
 </head>
-
 <body>
-    <a-scene renderer="colorManagement: true; physicallyCorrectLights: true" xr-mode-ui="enabled: true"
-        physics="debug: false; friction: 1;restitution:0.5">
+    <nav>
+        <div class="nav-container">
+            <a href="#hero-slide" class="logo">Mamta | STEAM</a>
+            <ul>
+                <li><a href="#about-slide">About</a></li>
+                <li><a href="#experience-slide">Experience</a></li>
+                <li><a href="#projects-slide">Projects</a></li>
+                <li><a href="#skills-edu-slide">Skills</a></li>
+                <li><a href="#contact-slide">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <section id="hero-slide" class="slide">
+        <div class="geo-shape circle" style="top: 8%; left: 10%; animation-delay: 0s;"></div>
+        <div class="geo-shape diamond" style="top: 20%; right: 12%; animation-delay: 4s;"></div>
+        <div class="geo-shape ring" style="bottom: 18%; left: 6%; animation-delay: 8s;"></div>
+        <div class="geo-shape dot" style="top: 55%; right: 22%; animation-delay: 12s;"></div>
+        <div class="geo-shape cross" style="top: 12%; left: 42%; animation-delay: 16s;"></div>
+        <div class="geo-shape circle" style="bottom: 12%; right: 8%; animation-delay: 3s;"></div>
+        <div class="geo-shape dot" style="top: 32%; left: 28%; animation-delay: 20s;"></div>
+        <div class="geo-shape line" style="top: 70%; left: 15%; animation-delay: 22s;"></div>
 
-        <a-assets>
-            <!-- Keep your paths (just make sure 'Assests' folder name is correct on disk) -->
-            <a-asset-item id="treeModel" src="Assests/tree.glb"></a-asset-item>
-            <a-asset-item id="houseModel" src="Assests/asian_big_house.glb"></a-asset-item>
-            <img id="groundTex" src="Assests/ground.jpg">
-            <img id="skyTex" src="Assests/cloud-blue-sky-background.jpg">
-            <a-asset-item id="treeModel1" src="Assests/tree.glb"></a-asset-item>
-            <!--<video id="3d video" autoplay loop="true" src="Assests\bg-video.mp4"></video>-->
-            <a-asset-item id="tree" src="Assests/old_tree.glb"></a-asset-item>
-            <a-asset-item id="treeS" src="Assests/old_tree.glb"></a-asset-item>
-            <a-asset-item id="tree1" src="Assests/old_tree.glb"></a-asset-item>
-            <a-asset-item id="tree1" src="Assests/old_tree.glb"></a-asset-item>
-            <a-asset-item id="grass" src="Assests/stones_and_grass.glb"></a-asset-item>
-            <a-asset-item id="grass1" src="Assests/grass (1).glb"></a-asset-item>
-            <a-asset-item id="grass2" src="Assests/bulbasaur-from-sv/source/bulbasaur.glb"></a-asset-item>
-            <a-asset-item id="flower"
-                src="Assests\bulbasaur-from-sv\textures\760bb764aa20--crystal-flower-with-violet-t-0-glb (1)\source\760bb764aa20_Crystal_flower_with_violet_t_0_glb.glb"></a-asset-item></a-assets>
-        <!-- <a-video src="#3d video" position="0 10 -30" rotation="-10 0 0" width="60" height="30" autoplay="true" loop="true"></a-video>-->
+        <div class="hero-layout">
+            <div class="hero-badge">🌟 STEAM Facilitator</div>
+            <h1 class="hero-name">Mamta</h1>
+            <p class="hero-title">Technical Proficiency & Growth</p>
+            <p class="hero-desc">Nurturing minds, cultivating innovation through robotics, programming & hands-on learning.</p>
+            <div class="hero-cta">
+                <a href="#about-slide" class="cta-primary">Explore My Journey ↓</a>
+                <a href="#contact-slide" class="cta-secondary">Get in Touch</a>
+            </div>
+        </div>
+        <div class="scroll-hint">
+            <span>Scroll</span>
+            <div class="arrow"></div>
+        </div>
+    </section>
 
-        <!-- Tree -->
-        <a-entity gltf-model="#treeModel" position="-10 -5 -40" rotation="0 0 0" scale="0.7 1 0.7">
-        </a-entity>
-        <a-entity gltf-model="Assests/tree.glb" position="25.69284 -5.112 -39.85836" scale="0.7 1 0.7">
-        </a-entity>
-        <a-entity gltf-model="Assests/old_tree.glb" position="3.68924 -5 -31.35209" scale="0.7 1 0.7"
-            rotation="0 113.92291727924697 0">
-        </a-entity>
-        <a-entity gltf-model="Assests/old_tree.glb" position="15.83775 -4.98564 -30.47198"
-            rotation="0 -55.08817312844327 0" scale="0.7 1 0.7">
-        </a-entity>
-        <a-entity gltf-model="Assests/old_tree.glb" position="28.56275 -2.58393 -28.10979"
-            rotation="0 -101.04970153824763 0" scale="3.52006 4.41191 4.79697">
-        </a-entity>
-        <a-entity gltf-model="Assests/old_tree.glb" position="-12.90526 -2.75829 -27.403"
-            rotation="0 115.45901712799272 0" scale="3.52006 4.41191 4.79697">
-        </a-entity>
-        <a-entity gltf-model="#grass1" position="-42.30857 -3.0695 -40.62122" rotation="0 115.45901712799272 0"
-            scale="3.52006 4.41191 4.79697">
-        </a-entity>
+    <section id="about-slide" class="slide">
+        <div class="geo-shape ring" style="top: 8%; right: 12%; animation-delay: 2s;"></div>
+        <div class="geo-shape diamond" style="bottom: 15%; left: 10%; animation-delay: 6s;"></div>
+        <div class="geo-shape dot" style="top: 45%; left: 8%; animation-delay: 14s;"></div>
+        <div class="geo-shape circle" style="bottom: 30%; right: 8%; animation-delay: 10s;"></div>
 
-        <a-entity gltf-model="Assests\bulbasaur-from-sv\source\bulbasaur.glb" position="37.6038 4.98266 -32.55405"
-            rotation="0 -17.53995698233989 0" scale="0.77066 0.71961 0.92521" dynamic-body="mass:1;">
-        </a-entity>
+        <div class="about-layout">
+            <div class="about-visual">
+                <div class="about-avatar">👩‍🔬</div>
+                <div class="about-stats">
+                    <div class="stat-box">
+                        <div class="stat-num">90%</div>
+                        <div class="stat-label">Project Success</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num">50+</div>
+                        <div class="stat-label">Students Mentored</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num">10+</div>
+                        <div class="stat-label">Workshops Led</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num">3+</div>
+                        <div class="stat-label">Years Experience</div>
+                    </div>
+                </div>
+            </div>
+            <div class="about-text-card">
+                <h2>About Me 💡</h2>
+                <p>
+                    I am a dedicated IT student and a passionate <strong>STEAM Facilitator</strong>, currently pursuing ITI from Govt Sohna (2021) alongside my B.Sc background. My focus is on blending technical theory with compelling practical applications.
+                </p>
+                <p>
+                    My expertise lies in integrating technical education with practical application. I specialize in developing and leading workshops focused on <strong>robotics (Arduino/Spike Prime), Python programming, and advanced 3D design</strong>, striving to cultivate critical thinking and systematic problem-solving skills in every student.
+                </p>
+                <p>
+                    I believe in a <strong>hands-on, project-based approach</strong> to education — learning by building, failing, and iterating.
+                </p>
+            </div>
+        </div>
+    </section>
 
-        <a-entity gltf-model="#flower" position="-42.12468 27.34883 -40.98534"
-            rotation="2.2992796318599935 -119.78083777666451 -173.58902319078553" scale="3.52006 4.41191 4.79697"
-            dynamic-body="mass:1;">
-        </a-entity>
+    <section id="experience-slide" class="slide">
+        <div class="geo-shape diamond" style="bottom: 20%; left: 15%; animation-delay: 0s;"></div>
+        <div class="geo-shape circle" style="top: 15%; right: 12%; animation-delay: 5s;"></div>
+        <div class="geo-shape cross" style="top: 65%; right: 8%; animation-delay: 18s;"></div>
+        <div class="geo-shape dot" style="top: 30%; left: 5%; animation-delay: 11s;"></div>
+        
+        <div class="exp-layout">
+            <div class="exp-header">
+                <h2>Professional Journey 🛠️</h2>
+                <p class="section-subtitle">Where passion meets practice</p>
+            </div>
 
-        <a-entity id="stones_and_grass">
+            <div class="exp-grid">
+                <div class="exp-card">
+                    <div class="card-icon">🤖</div>
+                    <h3>STEAM Facilitator & Robotics Mentor</h3>
+                    <span class="exp-duration">[Organization] | Present</span>
+                    <ul>
+                        <li>Led interactive workshops on Arduino & Spike Prime — 90% student project success rate</li>
+                        <li>Mentoring FTC robotics team in strategy, design & competitive programming</li>
+                        <li>Built curriculum modules for Python programming & 3D modeling</li>
+                        <li>Guided students through complex technical projects with systematic documentation</li>
+                    </ul>
+                </div>
 
-        </a-entity>
-        <a-entity id="random_grass">
+                <div class="exp-card">
+                    <div class="card-icon">🎓</div>
+                    <h3>Outreach & Workshops</h3>
+                    <span class="exp-duration">Community Initiatives</span>
+                    <ul>
+                        <li>Delhi Cantt Army Base — Summer robotics & STEAM workshops</li>
+                        <li>Multiple community workshops in various societies</li>
+                        <li>Our Lady of Fatma — Specialized robotics workshops</li>
+                        <li>Fostered technical engagement among diverse student groups</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        </a-entity>
-        <a-entity id="random_flowers">
-        </a-entity>
+    <section id="projects-slide" class="slide">
+        <div class="geo-shape ring" style="top: 25%; left: 10%; animation-delay: 2s;"></div>
+        <div class="geo-shape circle" style="bottom: 10%; right: 15%; animation-delay: 7s;"></div>
+        <div class="geo-shape cross" style="bottom: 35%; left: 8%; animation-delay: 15s;"></div>
+        <div class="geo-shape diamond" style="top: 10%; right: 20%; animation-delay: 9s;"></div>
 
-        <!-- House -->
-        <a-entity gltf-model="#houseModel" position="10 -6 -60" rotation="0 0 0" scale="3 3 3">
-        </a-entity>
+        <div class="projects-layout">
+            <div class="projects-header">
+                <h2>Technical Projects 💻</h2>
+                <p class="section-subtitle">Building solutions from concept to code</p>
+            </div>
 
-        <!-- Ground -->
-        <a-plane src="#groundTex" position="0 -5 -53" rotation="-90 0 0" width="150" height="100"
-            material="repeat: 10 15" static-body>
-        </a-plane>
+            <div class="project-cards">
+                <div class="project-card">
+                    <div class="project-num">01</div>
+                    <h3>Autonomous Mapping Rover (AMR)</h3>
+                    <div class="project-tech">
+                        <span>Arduino UNO</span>
+                        <span>C/C++</span>
+                        <span>Ultrasonic Sensors</span>
+                        <span>Python</span>
+                    </div>
+                    <p>Engineered a compact rover for autonomous navigation & environment mapping.</p>
+                    <ul>
+                        <li>Real-time sensor polling & motor control with embedded C/C++</li>
+                        <li>Multiple ultrasonic sensor arrays for obstacle avoidance</li>
+                        <li>Python script for serial data processing & occupancy grid mapping</li>
+                    </ul>
+                </div>
 
-        <!-- Sky -->
-        <a-sky src="#skyTex" material="repeat: 0.52 0.68" geometry="radius: 500">
-        </a-sky>
+                <div class="project-card">
+                    <div class="project-num">02</div>
+                    <h3>Student Performance Tracker (SPT)</h3>
+                    <div class="project-tech">
+                        <span>Python</span>
+                        <span>Pandas</span>
+                        <span>CSV Database</span>
+                    </div>
+                    <p>Command-line app to track & analyze student performance in robotics workshops.</p>
+                    <ul>
+                        <li>Easy data entry, retrieval & analytical report generation</li>
+                        <li>Pandas for efficient data manipulation & structuring</li>
+                        <li>Targeted feedback based on automated data analysis</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <!-- ⭐ HYBRID CAMERA RIG ⭐ -->
-        <!-- movement-controls: keyboard (WASD), gamepad, etc. -->
-        <a-entity id="rig" position="9.5 0 -32.6" movement-controls="fly: false; speed: 0.15">
+    <section id="skills-edu-slide" class="slide">
+        <div class="geo-shape dot" style="bottom: 25%; right: 35%; animation-delay: 0s;"></div>
+        <div class="geo-shape diamond" style="top: 12%; left: 8%; animation-delay: 5s;"></div>
+        <div class="geo-shape ring" style="bottom: 10%; left: 18%; animation-delay: 10s;"></div>
+        <div class="geo-shape circle" style="top: 40%; right: 6%; animation-delay: 13s;"></div>
 
-            <!-- Head / camera -->
-            <a-entity id="head" camera look-controls wasd-controls="enabled: true" position="0 1.6 0">
-            </a-entity>
+        <div class="skills-layout">
+            <div class="skills-header">
+                <h2>Technical Proficiencies 🎯</h2>
+                <p class="section-subtitle">Tools & technologies I work with</p>
+            </div>
 
-            <!-- Left hand controller (no custom movement yet) -->
-            <a-entity id="leftHand" oculus-touch-controls="hand: left">
-            </a-entity>
+            <div class="bento-grid">
+                <div class="bento-item"><span>Arduino Programming (C/C++)</span></div>
+                <div class="bento-item"><span>Spike Prime Robotics</span></div>
+                <div class="bento-item"><span>Core Python</span></div>
+                <div class="bento-item"><span>3D Modeling & Design (Tinkercad)</span></div>
+                <div class="bento-item"><span>CAD Software (Onshape)</span></div>
+                <div class="bento-item"><span>App Design & Development</span></div>
+                <div class="bento-item"><span>Web Design (HTML/CSS)</span></div>
+                <div class="bento-item"><span>Virtual Reality (VR)</span></div>
+                <div class="bento-item"><span>Embedded Systems</span></div>
+                <div class="bento-item"><span>Curriculum Development</span></div>
+                <div class="bento-item"><span>Data Processing (Pandas)</span></div>
+            </div>
 
-            <!-- Right hand controller (thumbstick drives movement) -->
-            <a-entity id="rightHand" oculus-touch-controls="hand: right" thumbstick-move="speed: 3">
-            </a-entity>
-        </a-entity>
+            <div class="edu-section">
+                <div class="edu-card">
+                    <h3>ITI - Information Technology</h3>
+                    <p>Govt Sohna</p>
+                </div>
+                <div class="edu-card">
+                    <h3>B.Sc - Bachelor of Science (2021–2024)</h3>
+                    <p>Kalinga University</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    </a-scene>
+    <section id="contact-slide" class="slide">
+        <div class="geo-shape circle" style="top: 12%; right: 12%; animation-delay: 2s;"></div>
+        <div class="geo-shape diamond" style="bottom: 20%; left: 8%; animation-delay: 7s;"></div>
+        <div class="geo-shape ring" style="top: 50%; left: 15%; animation-delay: 12s;"></div>
+        <div class="geo-shape dot" style="bottom: 35%; right: 20%; animation-delay: 16s;"></div>
+
+        <div class="contact-layout">
+            <h2>Let's Build Together</h2>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <span class="icon">📧</span>
+                    <span>mamtasteamvarsity@gmail.com</span>
+                </div>
+                <div class="contact-item">
+                    <span class="icon">📍</span>
+                    <span>Global Sector 33, Sohna, Gurugram</span>
+                </div>
+            </div>
+            <p class="contact-footer">Let's cultivate the next generation of innovators together. 🚀</p>
+        </div>
+    </section>
+
+    <!-- Slide Navigation Controls -->
+    <div class="slide-navigation">
+        <button class="slide-nav-btn" id="prev-btn" title="Previous Slide">❮</button>
+        <button class="slide-nav-btn" id="next-btn" title="Next Slide">❯</button>
+    </div>
+
+    <!-- Slide Indicators -->
+    <div class="slide-indicator" id="indicators"></div>
+
+    <!-- Slide Counter -->
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">6</span>
+    </div>
 
     <script>
-        window.onload = function () {
-            const stonesAndGrass = document.querySelector('#stones_and_grass');
-            const randomGrass = document.querySelector('#random_grass');
-            const randomFlowers = document.querySelector('#random_flowers').components['instanced-mesh'];
-
-            const COUNT_z = 4;
-            const COUNT_x = 6;
-            const SPACING = 25;
-            const X = -68.94936;
-            const X1 = 68.94936;
-            const Y = -4.79521;
-            const Z = -9.83308;
-            const Z1 = -100.482;
-
-            for (let i = 0; i < COUNT_z; i++) {
-                const item = document.createElement('a-entity');
-                item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X} ${Y} ${Z + i * -SPACING}`);
-                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
-                stonesAndGrass.appendChild(item);
-            }
-            for (let i = 0; i < COUNT_z; i++) {
-                const item = document.createElement('a-entity');
-                item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X1} ${Y} ${Z + i * -SPACING}`);
-                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
-                stonesAndGrass.appendChild(item);
-            }
-            for (let i = 0; i < COUNT_x; i++) {
-                const item = document.createElement('a-entity');
-                item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X + i * SPACING} ${Y} ${Z}`);
-                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
-                item.setAttribute('rotation', '0 90 0');
-                stonesAndGrass.appendChild(item);
-            }
-            for (let i = 0; i < COUNT_x; i++) {
-                const item = document.createElement('a-entity');
-                item.setAttribute('gltf-model', '#grass');
-                item.setAttribute('position', `${X + i * SPACING} ${Y} ${Z1}`);
-                item.setAttribute('scale', '11.60201 16.54001 -25.38848');
-                item.setAttribute('rotation', '0 90 0');
-                stonesAndGrass.appendChild(item);
-            }
-            for (let i = 0; i < 100; i++) {
-                av
-                const item = document.createElement('a-entity');
-                item.setAttribute('gltf-model', '#flower');
-                const X = Math.random() * 100 - 50;
-                const Z = Math.random() * 100 - 50;
-                item.setAttribute('position', `${X} 27 ${Z}`);
-                item.setAttribute('dynamic-body', 'mass:1;');
-
-                randomFlowers.appendChild(item);
+        // Full Page Slide Functionality
+        class FullPageSlider {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.totalSlides = this.slides.length;
+                this.isScrolling = false;
+                this.scrollTimeout = null;
+                
+                this.init();
             }
 
+            init() {
+                this.setupIndicators();
+                this.attachEventListeners();
+                this.updateActiveSlide();
+                document.getElementById('total-slides').textContent = this.totalSlides;
+            }
 
-        };
+            setupIndicators() {
+                const indicatorsContainer = document.getElementById('indicators');
+                for (let i = 0; i < this.totalSlides; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'indicator-dot';
+                    if (i === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => this.goToSlide(i));
+                    indicatorsContainer.appendChild(dot);
+                }
+            }
+
+            attachEventListeners() {
+                // Navigation buttons
+                document.getElementById('next-btn').addEventListener('click', () => this.nextSlide());
+                document.getElementById('prev-btn').addEventListener('click', () => this.prevSlide());
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') this.nextSlide();
+                    if (e.key === 'ArrowLeft') this.prevSlide();
+                });
+
+                // Mouse wheel scroll
+                document.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    if (this.isScrolling) return;
+
+                    if (e.deltaY > 0) {
+                        this.nextSlide();
+                    } else {
+                        this.prevSlide();
+                    }
+                }, { passive: false });
+
+                // Touch swipe support
+                let touchStartY = 0;
+                document.addEventListener('touchstart', (e) => {
+                    touchStartY = e.touches[0].clientY;
+                });
+
+                document.addEventListener('touchend', (e) => {
+                    const touchEndY = e.changedTouches[0].clientY;
+                    const diff = touchStartY - touchEndY;
+
+                    if (Math.abs(diff) > 50) {
+                        if (diff > 0) {
+                            this.nextSlide();
+                        } else {
+                            this.prevSlide();
+                        }
+                    }
+                });
+            }
+
+            nextSlide() {
+                if (this.currentSlide < this.totalSlides - 1) {
+                    this.goToSlide(this.currentSlide + 1);
+                } else {
+                    this.goToSlide(0); // Loop to first slide
+                }
+            }
+
+            prevSlide() {
+                if (this.currentSlide > 0) {
+                    this.goToSlide(this.currentSlide - 1);
+                } else {
+                    this.goToSlide(this.totalSlides - 1); // Loop to last slide
+                }
+            }
+
+            goToSlide(index) {
+                if (index < 0 || index >= this.totalSlides || this.isScrolling) return;
+
+                this.isScrolling = true;
+                this.currentSlide = index;
+
+                const targetSlide = this.slides[index];
+                targetSlide.scrollIntoView({ behavior: 'smooth' });
+
+                this.updateActiveSlide();
+
+                clearTimeout(this.scrollTimeout);
+                this.scrollTimeout = setTimeout(() => {
+                    this.isScrolling = false;
+                }, 800);
+            }
+
+            updateActiveSlide() {
+                // Update indicators
+                document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+                    dot.classList.toggle('active', index === this.currentSlide);
+                });
+
+                // Update counter
+                document.getElementById('current-slide').textContent = this.currentSlide + 1;
+            }
+        }
+
+        // Initialize slider when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new FullPageSlider();
+        });
     </script>
-
 </body>
-
-</html>
