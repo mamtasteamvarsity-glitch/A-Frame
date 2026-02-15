@@ -2,42 +2,63 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Instancing + Fake Physics</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
-  <script>
-    AFRAME.registerPrimitive('a-blahblah', {
-      defaultComponents: {
-        geometry: { primitive: 'box', width: 8 },
-        material: { color: 'blue' }
-      },
+  <!-- Ammo.js (REQUIRED) -->
+  <script src="https://kripken.github.io/ammo.js/builds/ammo.wasm.js"></script>
 
-      mappings: {
-        height: 'geometry.height',
-        depth: 'geometry.depth',
-        color: 'material.color'
-      }
-    });
-  </script>
+  <!-- Physics system -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
 </head>
 
 <body>
-  <a-scene background="color: #ECECEC">
+  <a-scene physics="driver: ammo">
 
-    <!-- Now this works correctly -->
-    <a-blahblah
-      color="green"
-      height="3"
-      depth="4"
-      position="0 1.5 -5">
-    </a-blahblah>
+    <a-assets>
+      <!-- FIXED PATH -->
+      <a-asset-item id="flower" src="Assests\bulbasaur-from-sv\textures\760bb764aa20--crystal-flower-with-violet-t-0-glb (1)\source\760bb764aa20_Crystal_flower_with_violet_t_0_glb.glb"></a-asset-item>
+    </a-assets>
 
-    <a-camera position="0 1.6 0">
-      
-    </a-camera>
+    <a-entity id="randomFlowers"></a-entity>
+
+    <!-- Ground -->
+    <a-plane
+      rotation="-90 0 0"
+      width="100"
+      height="100"
+      color="#7BC8A4"
+      static-body>
+    </a-plane>
+
+    <a-sky color="#ECECEC"></a-sky>
+
+    
 
   </a-scene>
+
+  <script>
+    const scene = document.querySelector('a-scene');
+
+    scene.addEventListener('loaded', () => {
+      const randomFlowers = document.getElementById('randomFlowers');
+
+      for (let i = 0; i < 50; i++) {
+        const item = document.createElement('a-entity');
+
+        item.setAttribute('gltf-model', '#flower');
+
+        const x = Math.random() * 40 - 20;
+        const z = Math.random() * 40 - 20;
+
+        item.setAttribute('position', `${x} 15 ${z}`);
+        item.setAttribute('dynamic-body', 'mass: 1');
+
+        randomFlowers.appendChild(item);
+      }
+    });
+  </script>
+
 </body>
 </html>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Taj Mahal — AR/VR Historical Experience</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== LOADING SCREEN ===== -->
+  <div id="loading-screen">
+    <div class="loader-ornament">
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <!-- Dome shape -->
+        <path d="M40 10 C20 10, 10 30, 10 45 L10 60 L70 60 L70 45 C70 30, 60 10, 40 10Z" 
+              stroke="currentColor" stroke-width="1.5" fill="none" class="loader-dome"/>
+        <!-- Spire -->
+        <line x1="40" y1="10" x2="40" y2="2" stroke="currentColor" stroke-width="1.5" class="loader-spire"/>
+        <!-- Base -->
+        <rect x="5" y="60" width="70" height="6" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" class="loader-base"/>
+      </svg>
+    </div>
+    <h2 class="loader-title">Taj Mahal</h2>
+    <p class="loader-subtitle">AR/VR Historical Experience</p>
+    <div class="loader-progress">
+      <div class="loader-progress-fill" id="loader-fill"></div>
+    </div>
+    <p class="loader-hint">Preparing your journey through history...</p>
+  </div>
+
+  <!-- ===== AMBIENT CANVAS ===== -->
+  <canvas id="ambient-canvas"></canvas>
+
+  <!-- ===== HEADER ===== -->
+  <header id="header">
+    <div class="header-left">
+      <div class="header-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 2C8 2 4 8 4 14v4h16v-4c0-6-4-12-8-12z"/>
+          <line x1="12" y1="2" x2="12" y2="0.5"/>
+          <rect x="2" y="18" width="20" height="3" rx="1"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Taj Mahal</h1>
+        <span class="header-sub">A Wonder of the World</span>
+      </div>
+    </div>
+    <nav class="header-right">
+      <button class="hdr-btn" id="audio-toggle" title="Toggle Music">
+        <span class="audio-on">&#9835;</span>
+        <span class="audio-off">&#9836;</span>
+      </button>
+      <button class="hdr-btn" id="day-night-toggle" title="Day/Night">
+        <span class="mode-day">&#9728;&#65039;</span>
+        <span class="mode-night">&#127769;</span>
+      </button>
+      <button class="hdr-btn" id="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
+    </nav>
+  </header>
+
+  <!-- ===== A-FRAME 3D SCENE ===== -->
+  <div id="scene-container">
+    <a-scene
+      embedded
+      vr-mode-ui="enabled: false"
+      loading-screen="enabled: false"
+      renderer="antialias: true; colorManagement: true; sortObjects: true; physicallyCorrectLights: true"
+      id="main-scene"
+    >
+      <!-- Camera -->
+      <a-entity id="camera-rig" position="0 2.5 8">
+        <a-camera id="main-camera" look-controls="enabled: false" wasd-controls="enabled: false" fov="50"></a-camera>
+      </a-entity>
+
+      <!-- === DAY LIGHTING === -->
+      <a-entity id="light-ambient" light="type: ambient; color: #ffecd2; intensity: 0.55"></a-entity>
+      <a-entity id="light-sun" light="type: directional; color: #fff5e6; intensity: 0.95; castShadow: true" position="5 8 4"></a-entity>
+      <a-entity id="light-fill" light="type: directional; color: #c6e2ff; intensity: 0.25" position="-4 5 -3"></a-entity>
+      <a-entity id="light-top" light="type: point; color: #fffaf0; intensity: 0.35; distance: 20" position="0 10 0"></a-entity>
+
+      <!-- Sky -->
+      <a-sky id="scene-sky" color="#87CEEB"></a-sky>
+
+      <!-- === GROUND === -->
+      <!-- Outer ground (garden) -->
+      <a-circle rotation="-90 0 0" radius="30" material="shader: flat; color: #7cb342; opacity: 0.5" position="0 -0.02 0"></a-circle>
+      <!-- Marble platform base -->
+      <a-box id="platform-base" width="14" height="0.3" depth="14" position="0 0 0"
+        color="#f5f0e8" material="metalness: 0.1; roughness: 0.3" shadow="cast: true; receive: true"></a-box>
+      <!-- Upper platform -->
+      <a-box width="10" height="0.2" depth="10" position="0 0.25 0"
+        color="#faf6ef" material="metalness: 0.15; roughness: 0.25"></a-box>
+
+      <!-- Reflecting pool (water channel) -->
+      <a-box id="reflecting-pool" width="1.2" height="0.05" depth="12" position="0 0.16 -3"
+        color="#4fc3f7" material="metalness: 0.8; roughness: 0.1; opacity: 0.7"></a-box>
+
+      <!-- ============================
+           TAJ MAHAL 3D MODEL (Primitives)
+           Replace with: <a-entity gltf-model="url(assets/tajmahal.glb)"></a-entity>
+           ============================ -->
+      <a-entity id="taj-model" position="0 0.35 0" auto-rotate>
+
+        <!-- === MAIN BUILDING === -->
+        <!-- Main body (octagonal approximated as box) -->
+        <a-box id="main-body" width="4" height="3" depth="4" position="0 1.5 0"
+          color="#faf6ef" material="metalness: 0.08; roughness: 0.35" shadow="cast: true"></a-box>
+        
+        <!-- Front arch (iwan) -->
+        <a-box width="1.8" height="2.4" depth="0.1" position="0 1.2 2.01" 
+          color="#e8e0d0" material="metalness: 0.05; roughness: 0.4"></a-box>
+        <!-- Arch cutout (dark recess) -->
+        <a-box width="1.2" height="1.8" depth="0.15" position="0 1.1 2.02"
+          color="#2c1810" material="shader: flat; opacity: 0.85"></a-box>
+        <!-- Arch top (pointed arch shape - triangle) -->
+        <a-cone radius-bottom="0.7" radius-top="0" height="0.8" position="0 2.15 2.02"
+          color="#e8e0d0" material="metalness: 0.05; roughness: 0.4" rotation="0 0 0"></a-cone>
+
+        <!-- Back arch -->
+        <a-box width="1.2" height="1.8" depth="0.15" position="0 1.1 -2.02"
+          color="#2c1810" material="shader: flat; opacity: 0.85"></a-box>
+        <!-- Left arch -->
+        <a-box width="0.15" height="1.8" depth="1.2" position="-2.02 1.1 0"
+          color="#2c1810" material="shader: flat; opacity: 0.85"></a-box>
+        <!-- Right arch -->
+        <a-box width="0.15" height="1.8" depth="1.2" position="2.02 1.1 0"
+          color="#2c1810" material="shader: flat; opacity: 0.85"></a-box>
+
+        <!-- === MAIN DOME === -->
+        <!-- Dome drum (cylinder base for dome) -->
+        <a-cylinder id="dome-drum" radius="1.8" height="0.4" position="0 3.2 0"
+          color="#faf6ef" material="metalness: 0.1; roughness: 0.3"></a-cylinder>
+        <!-- Main onion dome -->
+        <a-sphere id="main-dome" radius="1.6" theta-start="0" theta-length="90" position="0 3.6 0"
+          color="#fefcf8" material="metalness: 0.15; roughness: 0.2" scale="1 1.3 1"></a-sphere>
+        <!-- Dome finial (spire) -->
+        <a-cylinder radius="0.06" height="0.8" position="0 5.8 0"
+          color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        <!-- Crescent on top -->
+        <a-sphere radius="0.1" position="0 6.25 0"
+          color="#d4a843" material="metalness: 0.9; roughness: 0.1"></a-sphere>
+
+        <!-- === FOUR SMALL DOMES (chattris) === -->
+        <!-- Front-Left chattri -->
+        <a-entity position="-1.7 3 1.7">
+          <a-cylinder radius="0.3" height="0.6" color="#faf6ef" material="metalness: 0.1; roughness: 0.3"></a-cylinder>
+          <a-sphere radius="0.35" position="0 0.5 0" color="#fefcf8" material="metalness: 0.15; roughness: 0.2" scale="1 1.2 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.4" position="0 1.1 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+        <!-- Front-Right chattri -->
+        <a-entity position="1.7 3 1.7">
+          <a-cylinder radius="0.3" height="0.6" color="#faf6ef" material="metalness: 0.1; roughness: 0.3"></a-cylinder>
+          <a-sphere radius="0.35" position="0 0.5 0" color="#fefcf8" material="metalness: 0.15; roughness: 0.2" scale="1 1.2 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.4" position="0 1.1 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+        <!-- Back-Left chattri -->
+        <a-entity position="-1.7 3 -1.7">
+          <a-cylinder radius="0.3" height="0.6" color="#faf6ef" material="metalness: 0.1; roughness: 0.3"></a-cylinder>
+          <a-sphere radius="0.35" position="0 0.5 0" color="#fefcf8" material="metalness: 0.15; roughness: 0.2" scale="1 1.2 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.4" position="0 1.1 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+        <!-- Back-Right chattri -->
+        <a-entity position="1.7 3 -1.7">
+          <a-cylinder radius="0.3" height="0.6" color="#faf6ef" material="metalness: 0.1; roughness: 0.3"></a-cylinder>
+          <a-sphere radius="0.35" position="0 0.5 0" color="#fefcf8" material="metalness: 0.15; roughness: 0.2" scale="1 1.2 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.4" position="0 1.1 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+
+        <!-- === FOUR MINARETS === -->
+        <!-- Front-Left Minaret -->
+        <a-entity id="minaret-fl" position="-4 0 4" class="hotspot-target" data-hotspot="minaret">
+          <a-cylinder radius="0.25" height="5.5" position="0 2.75 0" color="#faf6ef" material="metalness: 0.1; roughness: 0.3" shadow="cast: true"></a-cylinder>
+          <!-- Minaret balconies -->
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 3.5 0" rotation="90 0 0" color="#e8e0d0" material="metalness: 0.1; roughness: 0.3"></a-torus>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 4.5 0" rotation="90 0 0" color="#e8e0d0" material="metalness: 0.1; roughness: 0.3"></a-torus>
+          <!-- Minaret dome -->
+          <a-sphere radius="0.28" position="0 5.7 0" color="#fefcf8" material="metalness: 0.15; roughness: 0.2" scale="1 1.3 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.5" position="0 6.2 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+        <!-- Front-Right Minaret -->
+        <a-entity position="4 0 4">
+          <a-cylinder radius="0.25" height="5.5" position="0 2.75 0" color="#faf6ef" material="metalness: 0.1; roughness: 0.3" shadow="cast: true"></a-cylinder>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 3.5 0" rotation="90 0 0" color="#e8e0d0"></a-torus>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 4.5 0" rotation="90 0 0" color="#e8e0d0"></a-torus>
+          <a-sphere radius="0.28" position="0 5.7 0" color="#fefcf8" scale="1 1.3 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.5" position="0 6.2 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+        <!-- Back-Left Minaret -->
+        <a-entity position="-4 0 -4">
+          <a-cylinder radius="0.25" height="5.5" position="0 2.75 0" color="#faf6ef" material="metalness: 0.1; roughness: 0.3" shadow="cast: true"></a-cylinder>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 3.5 0" rotation="90 0 0" color="#e8e0d0"></a-torus>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 4.5 0" rotation="90 0 0" color="#e8e0d0"></a-torus>
+          <a-sphere radius="0.28" position="0 5.7 0" color="#fefcf8" scale="1 1.3 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.5" position="0 6.2 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+        <!-- Back-Right Minaret -->
+        <a-entity position="4 0 -4">
+          <a-cylinder radius="0.25" height="5.5" position="0 2.75 0" color="#faf6ef" material="metalness: 0.1; roughness: 0.3" shadow="cast: true"></a-cylinder>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 3.5 0" rotation="90 0 0" color="#e8e0d0"></a-torus>
+          <a-torus radius="0.35" radius-tubular="0.04" position="0 4.5 0" rotation="90 0 0" color="#e8e0d0"></a-torus>
+          <a-sphere radius="0.28" position="0 5.7 0" color="#fefcf8" scale="1 1.3 1" theta-length="90"></a-sphere>
+          <a-cylinder radius="0.03" height="0.5" position="0 6.2 0" color="#d4a843" material="metalness: 0.8; roughness: 0.15"></a-cylinder>
+        </a-entity>
+
+        <!-- === DECORATIVE ELEMENTS === -->
+        <!-- Front steps -->
+        <a-box width="3" height="0.1" depth="0.8" position="0 0.05 2.8" color="#f0ebe0" material="metalness: 0.05; roughness: 0.4"></a-box>
+        <a-box width="2.5" height="0.1" depth="0.6" position="0 0.15 3.2" color="#f0ebe0" material="metalness: 0.05; roughness: 0.4"></a-box>
+
+        <!-- Side decorative pillars on main body -->
+        <a-cylinder radius="0.08" height="2.8" position="-2.01 1.4 1.3" color="#ede6d6"></a-cylinder>
+        <a-cylinder radius="0.08" height="2.8" position="-2.01 1.4 -1.3" color="#ede6d6"></a-cylinder>
+        <a-cylinder radius="0.08" height="2.8" position="2.01 1.4 1.3" color="#ede6d6"></a-cylinder>
+        <a-cylinder radius="0.08" height="2.8" position="2.01 1.4 -1.3" color="#ede6d6"></a-cylinder>
+
+        <!-- Garden trees (simple cones) -->
+        <a-entity position="-3 0 8">
+          <a-cylinder radius="0.1" height="1" position="0 0.5 0" color="#5d4037"></a-cylinder>
+          <a-cone radius-bottom="0.6" radius-top="0" height="1.5" position="0 1.7 0" color="#2e7d32"></a-cone>
+        </a-entity>
+        <a-entity position="3 0 8">
+          <a-cylinder radius="0.1" height="1" position="0 0.5 0" color="#5d4037"></a-cylinder>
+          <a-cone radius-bottom="0.6" radius-top="0" height="1.5" position="0 1.7 0" color="#2e7d32"></a-cone>
+        </a-entity>
+        <a-entity position="-2 0 6">
+          <a-cylinder radius="0.08" height="0.8" position="0 0.4 0" color="#5d4037"></a-cylinder>
+          <a-cone radius-bottom="0.5" radius-top="0" height="1.2" position="0 1.4 0" color="#388e3c"></a-cone>
+        </a-entity>
+        <a-entity position="2 0 6">
+          <a-cylinder radius="0.08" height="0.8" position="0 0.4 0" color="#5d4037"></a-cylinder>
+          <a-cone radius-bottom="0.5" radius-top="0" height="1.2" position="0 1.4 0" color="#388e3c"></a-cone>
+        </a-entity>
+
+      </a-entity>
+      <!-- END TAJ MODEL -->
+
+      <!-- ===== CLICKABLE HOTSPOTS ===== -->
+      <!-- Main Dome Hotspot -->
+      <a-sphere class="hotspot" id="hs-dome" position="0 6.5 0" radius="0.25"
+        material="shader: flat; color: #ffd700; opacity: 0.8"
+        data-info="dome"
+        animation="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dur: 800; easing: easeInOutSine; dir: alternate; loop: true">
+      </a-sphere>
+
+      <!-- Front Entrance Hotspot -->
+      <a-sphere class="hotspot" id="hs-entrance" position="0 1.8 2.5" radius="0.2"
+        material="shader: flat; color: #ffd700; opacity: 0.8"
+        data-info="entrance"
+        animation="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dur: 800; easing: easeInOutSine; dir: alternate; loop: true">
+      </a-sphere>
+
+      <!-- Minaret Hotspot -->
+      <a-sphere class="hotspot" id="hs-minaret" position="-4.3 4 4.3" radius="0.2"
+        material="shader: flat; color: #ffd700; opacity: 0.8"
+        data-info="minaret"
+        animation="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dur: 800; easing: easeInOutSine; dir: alternate; loop: true">
+      </a-sphere>
+
+      <!-- Reflecting Pool Hotspot -->
+      <a-sphere class="hotspot" id="hs-pool" position="0 0.8 -4" radius="0.2"
+        material="shader: flat; color: #ffd700; opacity: 0.8"
+        data-info="pool"
+        animation="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dur: 800; easing: easeInOutSine; dir: alternate; loop: true">
+      </a-sphere>
+
+    </a-scene>
+
+    <!-- Interaction overlay -->
+    <div id="interaction-overlay"></div>
+
+    <!-- Gesture hint -->
+    <div id="gesture-hint" class="gesture-hint">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M14 4V2M5 5L4 4M2 14h2M4 24l1-1M14 26v-2M24 24l-1-1M26 14h-2M24 4l-1 1"/>
+        <circle cx="14" cy="14" r="6"/>
+      </svg>
+      <p>Drag to rotate &bull; Scroll/Pinch to zoom</p>
+    </div>
+  </div>
+
+  <!-- ===== HOTSPOT INFO BUTTONS (HTML overlay) ===== -->
+  <div id="hotspot-buttons">
+    <button class="hotspot-btn" data-info="dome" title="Main Dome">
+      <span class="hotspot-icon">&#9681;</span>
+      <span class="hotspot-label">Dome</span>
+    </button>
+    <button class="hotspot-btn" data-info="entrance" title="Grand Entrance">
+      <span class="hotspot-icon">&#9961;</span>
+      <span class="hotspot-label">Entrance</span>
+    </button>
+    <button class="hotspot-btn" data-info="minaret" title="Minarets">
+      <span class="hotspot-icon">&#9648;</span>
+      <span class="hotspot-label">Minarets</span>
+    </button>
+    <button class="hotspot-btn" data-info="pool" title="Reflecting Pool">
+      <span class="hotspot-icon">&#9783;</span>
+      <span class="hotspot-label">Pool</span>
+    </button>
+  </div>
+
+  <!-- ===== INFO BACKDROP ===== -->
+  <div id="info-backdrop" class="hidden"></div>
+
+  <!-- ===== INFO PANEL (Popup) ===== -->
+  <div id="info-panel" class="info-panel hidden">
+    <button class="info-close" id="info-close">&times;</button>
+    <div class="info-header">
+      <span class="info-badge" id="info-badge">Architecture</span>
+      <h2 id="info-title">Main Dome</h2>
+    </div>
+    <div class="info-body">
+      <div class="info-meta">
+        <div class="meta-item">
+          <span class="meta-label">Year</span>
+          <span class="meta-value" id="info-year">1632-1653</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Architect</span>
+          <span class="meta-value" id="info-architect">Ustad Ahmad Lahori</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Style</span>
+          <span class="meta-value" id="info-style">Mughal Architecture</span>
+        </div>
+      </div>
+      <p class="info-desc" id="info-desc">
+        The main dome of the Taj Mahal is one of the most iconic features of the monument.
+      </p>
+      <div class="info-facts" id="info-facts">
+        <div class="fact">
+          <span class="fact-icon">&#128205;</span>
+          <span id="info-fact1">Agra, Uttar Pradesh, India</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">&#127984;</span>
+          <span id="info-fact2">UNESCO World Heritage Site (1983)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM ACTION BAR ===== -->
+  <div id="action-bar">
+    <button class="action-btn" id="ar-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <span>View in AR</span>
+    </button>
+    <button class="action-btn action-secondary" id="reset-view-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 4v6h6M23 20v-6h-6"/>
+        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+      </svg>
+      <span>Reset</span>
+    </button>
+  </div>
+
+  <!-- ===== TIMELINE BAR ===== -->
+  <div id="timeline">
+    <div class="timeline-track">
+      <div class="timeline-point active" data-year="1632">
+        <span class="tl-dot"></span>
+        <span class="tl-label">1632<br/><small>Construction Begins</small></span>
+      </div>
+      <div class="timeline-point" data-year="1643">
+        <span class="tl-dot"></span>
+        <span class="tl-label">1643<br/><small>Mausoleum Complete</small></span>
+      </div>
+      <div class="timeline-point" data-year="1653">
+        <span class="tl-dot"></span>
+        <span class="tl-label">1653<br/><small>Fully Complete</small></span>
+      </div>
+      <div class="timeline-point" data-year="1983">
+        <span class="tl-dot"></span>
+        <span class="tl-label">1983<br/><small>UNESCO Heritage</small></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast hidden">
+    <span class="toast-icon">&#10003;</span>
+    <span class="toast-text">Day Mode</span>
+  </div>
+
+  <!-- ===== AR MODAL ===== -->
+  <div id="ar-modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" id="close-ar-modal">&times;</button>
+      <div class="modal-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <h3>Augmented Reality Mode</h3>
+      <p>Place the <strong>Taj Mahal</strong> in your real world! Point your camera at a <strong>Hiro marker</strong> to see the monument appear.</p>
+      <div class="modal-marker">
+        <img src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" alt="Hiro Marker" width="130" loading="lazy" />
+        <span class="marker-hint">Print or display this marker</span>
+      </div>
+      <a href="ar.html" class="btn-primary modal-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        Launch AR Camera
+      </a>
+      <p class="modal-footnote">Best on mobile devices with rear camera</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
