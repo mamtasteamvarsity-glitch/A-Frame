@@ -1310,6 +1310,96 @@
             100% { border-color: var(--cyan); }
         }
 
+        /* ---- Achievement Content Block ---- */
+        .about-achievement {
+            width: 100%;
+            max-width: 280px;
+            padding: 24px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(30, 144, 255, 0.06));
+            border: 2px solid rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 0 30px rgba(0, 240, 255, 0.1),
+                0 0 30px rgba(0, 240, 255, 0.25);
+            position: relative;
+            overflow: hidden;
+            animation: achievementFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes achievementFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .about-achievement::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, transparent, rgba(0, 240, 255, 0.1), transparent) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: borderFlow 3s linear infinite;
+            pointer-events: none;
+        }
+
+        .about-achievement h3 {
+            font-family: var(--heading-font);
+            font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+            font-weight: 700;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 0 0 16px 0;
+            line-height: 1.3;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            position: relative;
+            z-index: 2;
+        }
+
+        .achievement-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .achievement-list li {
+            font-size: clamp(0.9rem, 1.1vw, 1rem);
+            color: var(--text-dark);
+            opacity: 0.85;
+            margin-bottom: 12px;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+        }
+
+        .achievement-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .achievement-list li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+            font-weight: bold;
+            font-size: 1.2em;
+            animation: bulletGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes bulletGlow {
+            0%, 100% { color: var(--cyan); text-shadow: 0 0 8px rgba(0, 240, 255, 0.4); }
+            50% { color: var(--neon-blue); text-shadow: 0 0 12px rgba(30, 144, 255, 0.6); }
+        }
+
         .about-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -2067,6 +2157,7 @@
 
             .about-layout { grid-template-columns: 1fr; gap: 25px; text-align: center; }
             .about-avatar { max-width: 180px; margin: 0 auto; font-size: 4rem; }
+            .about-achievement { max-width: 100%; margin: 0 auto; }
             .about-text-card { padding: 38px; }
 
             .exp-grid { grid-template-columns: 1fr; }
@@ -2155,7 +2246,15 @@
 
         <div class="about-layout">
             <div class="about-visual">
-                <div class="about-avatar">👩‍🔬</div>
+                <div class="about-achievement">
+                    <h3>Mentorship & Robotics Achievements</h3>
+                    <ul class="achievement-list">
+                        <li>Mentored an FTC (FIRST Tech Challenge) robotics team</li>
+                        <li>Team selected as 1st Winning Alliance at the North India Regional competition</li>
+                        <li>Mentored students further at the National level competition</li>
+                        <li>Guided team in robotics design, strategy, and competition preparation</li>
+                    </ul>
+                </div>
                 <div class="about-stats">
                     <div class="stat-box">
                         <div class="stat-num">90%</div>
