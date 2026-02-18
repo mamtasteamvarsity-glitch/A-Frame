@@ -94,6 +94,151 @@
             100% { top: 100%; }
         }
 
+        /* ========================================= */
+        /* SOLAR SYSTEM BACKGROUND EFFECT           */
+        /* Futuristic orbiting planets animation    */
+        /* ========================================= */
+        .solar-system {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Central sun */
+        .sun {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 200, 100, 0.8), rgba(0, 240, 255, 0.3));
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.5), 0 0 25px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Orbit paths */
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+        }
+
+        .orbit.orbit-1 { width: 150px; height: 150px; }
+        .orbit.orbit-2 { width: 280px; height: 280px; }
+        .orbit.orbit-3 { width: 420px; height: 420px; }
+        .orbit.orbit-4 { width: 560px; height: 560px; }
+
+        /* Planets on orbits */
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(100, 200, 255, 0.8), rgba(30, 144, 255, 0.3));
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.6), 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .planet.planet-1 {
+            width: 6px;
+            height: 6px;
+            animation: orbit-rotate-1 45s linear infinite;
+        }
+
+        .planet.planet-2 {
+            width: 5px;
+            height: 5px;
+            background: radial-gradient(circle at 35% 35%, rgba(200, 150, 255, 0.8), rgba(124, 124, 255, 0.3));
+            box-shadow: 0 0 8px rgba(124, 124, 255, 0.6), 0 0 15px rgba(124, 124, 255, 0.3);
+            animation: orbit-rotate-2 35s linear infinite reverse;
+        }
+
+        .planet.planet-3 {
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle at 35% 35%, rgba(0, 240, 200, 0.8), rgba(0, 240, 255, 0.3));
+            box-shadow: 0 0 8px rgba(0, 240, 200, 0.6), 0 0 15px rgba(0, 240, 200, 0.3);
+            animation: orbit-rotate-3 55s linear infinite;
+        }
+
+        .planet.planet-4 {
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle at 35% 35%, rgba(255, 150, 200, 0.8), rgba(0, 240, 255, 0.2));
+            box-shadow: 0 0 6px rgba(0, 240, 255, 0.5), 0 0 12px rgba(0, 240, 255, 0.25);
+            animation: orbit-rotate-4 60s linear infinite reverse;
+        }
+
+        .planet.planet-5 {
+            width: 5px;
+            height: 5px;
+            background: radial-gradient(circle at 35% 35%, rgba(150, 200, 255, 0.8), rgba(30, 144, 255, 0.3));
+            box-shadow: 0 0 8px rgba(30, 144, 255, 0.5), 0 0 14px rgba(30, 144, 255, 0.25);
+            animation: orbit-rotate-5 50s linear infinite;
+        }
+
+        .planet.planet-6 {
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle at 35% 35%, rgba(200, 100, 255, 0.8), rgba(124, 124, 255, 0.3));
+            box-shadow: 0 0 6px rgba(124, 124, 255, 0.5), 0 0 12px rgba(124, 124, 255, 0.25);
+            animation: orbit-rotate-6 40s linear infinite reverse;
+        }
+
+        /* Orbit 1 - Three planets */
+        @keyframes orbit-rotate-1 {
+            from { transform: rotate(0deg) translateX(75px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(75px) rotate(-360deg); }
+        }
+
+        @keyframes orbit-rotate-2 {
+            from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
+        }
+
+        @keyframes orbit-rotate-3 {
+            from { transform: rotate(0deg) translateX(210px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(210px) rotate(-360deg); }
+        }
+
+        @keyframes orbit-rotate-4 {
+            from { transform: rotate(0deg) translateX(280px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(280px) rotate(-360deg); }
+        }
+
+        @keyframes orbit-rotate-5 {
+            from { transform: rotate(45deg) translateX(210px) rotate(-45deg); }
+            to { transform: rotate(405deg) translateX(210px) rotate(-405deg); }
+        }
+
+        @keyframes orbit-rotate-6 {
+            from { transform: rotate(120deg) translateX(140px) rotate(-120deg); }
+            to { transform: rotate(480deg) translateX(140px) rotate(-480deg); }
+        }
+
+        /* Mobile responsiveness - reduce complexity on small screens */
+        @media (max-width: 768px) {
+            .solar-system {
+                opacity: 0.4;
+            }
+            .orbit.orbit-3,
+            .orbit.orbit-4 {
+                display: none;
+            }
+            .planet.planet-4,
+            .planet.planet-5,
+            .planet.planet-6 {
+                display: none;
+            }
+        }
+
         /* ---- Floating Geometric Shapes (Circuit Elements) ---- */
         .geo-shape {
             position: absolute;
@@ -2185,6 +2330,30 @@
     </style>
 </head>
 <body>
+    <!-- Solar System Background Animation -->
+    <div class="solar-system">
+        <!-- Central Sun -->
+        <div class="sun"></div>
+        
+        <!-- Orbit 1 (150px diameter) -->
+        <div class="orbit orbit-1"></div>
+        <div class="planet planet-1" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        
+        <!-- Orbit 2 (280px diameter) -->
+        <div class="orbit orbit-2"></div>
+        <div class="planet planet-2" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        <div class="planet planet-5" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        
+        <!-- Orbit 3 (420px diameter) -->
+        <div class="orbit orbit-3"></div>
+        <div class="planet planet-3" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        <div class="planet planet-6" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        
+        <!-- Orbit 4 (560px diameter) -->
+        <div class="orbit orbit-4"></div>
+        <div class="planet planet-4" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+    </div>
+
     <nav>
         <div class="nav-container">
             <a href="#hero-slide" class="logo">Mamta | STEAM</a>
