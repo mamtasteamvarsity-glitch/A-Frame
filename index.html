@@ -309,9 +309,33 @@
             z-index: 20;
             position: relative;
             min-height: 100vh;
+            border: 2px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 
+                inset 0 0 40px rgba(0, 240, 255, 0.05),
+                inset 0 0 80px rgba(30, 144, 255, 0.02);
+            animation: frameGlow 8s ease-in-out infinite;
         }
         
-        /* HUD Rings Container */
+        @keyframes frameGlow {
+            0%, 100% { box-shadow: inset 0 0 40px rgba(0, 240, 255, 0.05), inset 0 0 80px rgba(30, 144, 255, 0.02); }
+            50% { box-shadow: inset 0 0 60px rgba(0, 240, 255, 0.1), inset 0 0 100px rgba(30, 144, 255, 0.05); }
+        }
+        
+        /* Corner Bracket Elements */
+        .hero-layout::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 50px;
+            height: 50px;
+            border-left: 3px solid rgba(0, 240, 255, 0.6);
+            border-top: 3px solid rgba(0, 240, 255, 0.6);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2);
+            animation: cornerPulse 4s ease-in-out infinite;
+        }
+        
+        /* Corner Bracket Top-Left */
         .hero-layout::before {
             content: '';
             position: absolute;
@@ -330,6 +354,11 @@
         @keyframes hudRing1 {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        @keyframes cornerPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.7), inset 0 0 20px rgba(0, 240, 255, 0.4); }
         }
 
         /* Second HUD Ring */
@@ -353,7 +382,7 @@
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        /* Hero Badge */
+        /* Hero Badge with Tech Frame */
         .hero-badge {
             display: inline-flex;
             align-items: center;
@@ -373,9 +402,22 @@
             animation: fadeSlideDown 0.8s ease 0.3s both;
             box-shadow: 
                 0 0 18px rgba(0, 240, 255, 0.3),
-                inset 0 0 15px rgba(0, 240, 255, 0.08);
+                inset 0 0 15px rgba(0, 240, 255, 0.08),
+                inset 8px 2px 0 rgba(0, 240, 255, 0.4);
             position: relative;
             overflow: hidden;
+        }
+        
+        .hero-badge::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            border-right: 2px solid rgba(0, 240, 255, 0.6);
+            border-top: 2px solid rgba(0, 240, 255, 0.6);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
         
         .hero-badge::before {
@@ -554,7 +596,19 @@
                 inset 0 0 30px rgba(0, 240, 255, 0.2),
                 0 0 60px rgba(0, 240, 255, 0.3);
             transform: translateY(-3px);
-            animation: pulseGlow 0.6s ease;
+            animation: pulseGlow 0.6s ease, energyCharge 0.8s ease;
+        }
+        
+        .cta-primary:hover::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 10%;
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00F5FF, transparent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.8);
+            animation: energyLine 0.6s ease;
         }
         
         .cta-primary:hover::before {
@@ -582,7 +636,19 @@
                 inset 0 0 25px rgba(0, 240, 255, 0.15),
                 0 0 50px rgba(0, 240, 255, 0.2);
             transform: translateY(-3px);
-            animation: pulseGlow 0.6s ease;
+            animation: pulseGlow 0.6s ease, energyCharge 0.8s ease;
+        }
+        
+        .cta-secondary:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 10%;
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #1E90FF, transparent);
+            box-shadow: 0 0 12px rgba(30, 144, 255, 0.7);
+            animation: energyLine 0.6s ease reverse;
         }
         
         .cta-secondary:hover::before {
@@ -592,6 +658,17 @@
         @keyframes pulseGlow {
             0%, 100% { transform: translateY(-3px); }
             50% { transform: translateY(-6px); }
+        }
+        
+        @keyframes energyCharge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 1.3; filter: brightness(1.2); }
+        }
+        
+        @keyframes energyLine {
+            0% { width: 0%; left: 50%; opacity: 0; }
+            50% { width: 80%; left: 10%; opacity: 1; }
+            100% { width: 80%; left: 10%; opacity: 0; }
         }
 
         /* Scroll Indicator */
@@ -673,6 +750,311 @@
         @keyframes fadeSlideDown {
             from { opacity: 0; transform: translateY(-15px); filter: blur(8px); }
             to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        
+        /* Data Panel Indicator Dots */
+        .hero-name::._indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00F5FF;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+            margin: 0 4px;
+            animation: pulseIndicator 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulseIndicator {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+
+        /* ===== CORNER BRACKETS ===== */
+        .corner-bracket {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 15;
+        }
+        
+        .corner-bracket.corner-tr {
+            top: -10px;
+            right: -10px;
+        }
+        .corner-bracket.corner-tr::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.8), transparent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.7);
+            animation: cornerGlowH 3s ease-in-out infinite;
+        }
+        .corner-bracket.corner-tr::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.8), transparent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.7);
+            animation: cornerGlowV 3s ease-in-out infinite;
+        }
+        
+        .corner-bracket.corner-bl {
+            bottom: -10px;
+            left: -10px;
+        }
+        .corner-bracket.corner-bl::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(30, 144, 255, 0.7), transparent);
+            box-shadow: 0 0 12px rgba(30, 144, 255, 0.6);
+            animation: cornerGlowH 4s ease-in-out infinite 0.5s;
+        }
+        .corner-bracket.corner-bl::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(180deg, transparent, rgba(30, 144, 255, 0.7), transparent);
+            box-shadow: 0 0 12px rgba(30, 144, 255, 0.6);
+            animation: cornerGlowV 4s ease-in-out infinite 0.5s;
+        }
+        
+        .corner-bracket.corner-br {
+            bottom: -10px;
+            right: -10px;
+        }
+        .corner-bracket.corner-br::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(124, 124, 255, 0.7), transparent);
+            box-shadow: 0 0 12px rgba(124, 124, 255, 0.6);
+            animation: cornerGlowH 3.5s ease-in-out infinite 0.3s;
+        }
+        .corner-bracket.corner-br::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(180deg, transparent, rgba(124, 124, 255, 0.7), transparent);
+            box-shadow: 0 0 12px rgba(124, 124, 255, 0.6);
+            animation: cornerGlowV 3.5s ease-in-out infinite 0.3s;
+        }
+        
+        @keyframes cornerGlowH {
+            0%, 100% { opacity: 0.3; filter: blur(1px); }
+            50% { opacity: 1; filter: blur(0px); }
+        }
+        
+        @keyframes cornerGlowV {
+            0%, 100% { opacity: 0.4; filter: blur(1px); }
+            50% { opacity: 0.9; filter: blur(0px); }
+        }
+        
+        /* ===== TECH PANELS ===== */
+        .tech-panel {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .tech-panel.panel-left {
+            left: -100px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 200px;
+            border: 2px solid rgba(0, 240, 255, 0.25);
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: rgba(0, 240, 255, 0.03);
+            box-shadow: inset 10px 0 30px rgba(0, 240, 255, 0.1), 0 0 20px rgba(0, 240, 255, 0.15);
+            animation: panelPulse 6s ease-in-out infinite;
+        }
+        
+        .tech-panel.panel-left::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #00F5FF;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: indicatorBlink 1.5s ease-in-out infinite;
+        }
+        
+        .tech-panel.panel-left::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #1E90FF;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(30, 144, 255, 0.5);
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: indicatorBlink 2s ease-in-out infinite 0.5s;
+        }
+        
+        .tech-panel.panel-right {
+            right: -100px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 200px;
+            border: 2px solid rgba(30, 144, 255, 0.2);
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: rgba(30, 144, 255, 0.02);
+            box-shadow: inset -10px 0 30px rgba(30, 144, 255, 0.08), 0 0 15px rgba(30, 144, 255, 0.1);
+            animation: panelPulse 7s ease-in-out infinite 0.3s;
+        }
+        
+        .tech-panel.panel-right::before {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #1E90FF;
+            border-radius: 50%;
+            box-shadow: 0 0 7px rgba(30, 144, 255, 0.5);
+            top: 30%;
+            right: 50%;
+            transform: translateX(50%);
+            animation: indicatorBlink 2.5s ease-in-out infinite;
+        }
+        
+        .tech-panel.panel-right::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #7C7CFF;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(124, 124, 255, 0.4);
+            bottom: 20%;
+            right: 50%;
+            transform: translateX(50%);
+            animation: indicatorBlink 1.8s ease-in-out infinite 0.8s;
+        }
+        
+        @keyframes panelPulse {
+            0%, 100% { opacity: 0.5; box-shadow: inset 10px 0 30px rgba(0, 240, 255, 0.1), 0 0 20px rgba(0, 240, 255, 0.15); }
+            50% { opacity: 0.85; box-shadow: inset 10px 0 40px rgba(0, 240, 255, 0.15), 0 0 30px rgba(0, 240, 255, 0.25); }
+        }
+        
+        @keyframes indicatorBlink {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(0.8); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+        }
+
+        /* ===== ENHANCED HOLOGRAPHIC EFFECTS ===== */
+        
+        /* Animated energy bar on hero */
+        .hero-title::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00F5FF, #1E90FF, transparent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+            opacity: 0.6;
+            animation: energyFlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes energyFlow {
+            0%, 100% { opacity: 0.6; width: 200px; left: 50%; transform: translateX(-50%); }
+            50% { opacity: 1; width: 250px; left: 50%; transform: translateX(-50%); }
+        }
+        
+        /* Tech status indicator */
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 240, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(0, 240, 255, 0.4);
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #E6F1FF;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            animation: fadeSlideDown 0.8s ease 0.3s both;
+            box-shadow: 0 0 18px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* ===== ENHANCED HOLOGRAPHIC EFFECTS ===== */
+        
+        /* Animated energy bar on hero title */
+        .hero-title::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00F5FF, #1E90FF, transparent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+            opacity: 0.6;
+            animation: energyFlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes energyFlow {
+            0%, 100% { opacity: 0.6; width: 200px; left: 50%; transform: translateX(-50%); }
+            50% { opacity: 1; width: 250px; left: 50%; transform: translateX(-50%); }
+        }
+        
+        /* Enhanced scan line effect */
+        .hero-scan-line::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.5), transparent);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+            animation: scanBeam 6s linear infinite, scanGlitch 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes scanGlitch {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; filter: blur(0.5px); }
         }
 
         .cta-primary {
@@ -1605,6 +1987,12 @@
                 min-height: auto;
             }
             
+            /* Hide corner brackets on mobile */
+            .corner-bracket { display: none; }
+            
+            /* Hide tech panels on mobile */
+            .tech-panel { display: none; }
+            
             /* Adjust HUD rings for mobile */
             .hero-layout::before { 
                 width: 280px;
@@ -1720,6 +2108,17 @@
         <div class="geo-shape line" style="top: 70%; left: 15%; animation-delay: 22s;"></div>
 
         <div class="hero-layout">
+            <!-- Corner Brackets (Top-Right) -->
+            <div class="corner-bracket corner-tr"></div>
+            <!-- Corner Brackets (Bottom-Left) -->
+            <div class="corner-bracket corner-bl"></div>
+            <!-- Corner Brackets (Bottom-Right) -->
+            <div class="corner-bracket corner-br"></div>
+            <!-- Left Tech Panel -->
+            <div class="tech-panel panel-left"></div>
+            <!-- Right Tech Panel -->
+            <div class="tech-panel panel-right"></div>
+            
             <div class="hero-badge">🌟 STEAM Facilitator</div>
             <h1 class="hero-name">Mamta</h1>
             <p class="hero-title">Technical Proficiency & Growth</p>
