@@ -239,6 +239,266 @@
             }
         }
 
+        /* ========================================= */
+        /* FLOATING ROBOTIC UI EFFECTS              */
+        /* Bubble-like floating interface elements  */
+        /* ========================================= */
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Base floating element styles */
+        .floating-element {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            border-radius: 50%;
+        }
+
+        /* Glowing Circle Elements */
+        .float-circle {
+            background: radial-gradient(circle at 35% 35%, rgba(0, 240, 255, 0.3), rgba(0, 240, 255, 0.05));
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .float-circle.cyan { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.1); }
+        .float-circle.blue {
+            background: radial-gradient(circle at 35% 35%, rgba(30, 144, 255, 0.3), rgba(30, 144, 255, 0.05));
+            border-color: rgba(30, 144, 255, 0.25);
+            box-shadow: 0 0 15px rgba(30, 144, 255, 0.4), inset 0 0 10px rgba(30, 144, 255, 0.1);
+        }
+        .float-circle.purple {
+            background: radial-gradient(circle at 35% 35%, rgba(124, 124, 255, 0.3), rgba(124, 124, 255, 0.05));
+            border-color: rgba(124, 124, 255, 0.25);
+            box-shadow: 0 0 15px rgba(124, 124, 255, 0.4), inset 0 0 10px rgba(124, 124, 255, 0.1);
+        }
+
+        /* HUD Ring Elements */
+        .float-ring {
+            background: transparent;
+            border: 1.5px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.08);
+        }
+
+        .float-ring.blue {
+            border-color: rgba(30, 144, 255, 0.3);
+            box-shadow: 0 0 12px rgba(30, 144, 255, 0.35), inset 0 0 8px rgba(30, 144, 255, 0.08);
+        }
+        .float-ring.purple {
+            border-color: rgba(124, 124, 255, 0.3);
+            box-shadow: 0 0 12px rgba(124, 124, 255, 0.35), inset 0 0 8px rgba(124, 124, 255, 0.08);
+        }
+
+        /* Hexagon Shape Elements */
+        .float-hexagon {
+            width: 20px;
+            height: 20px;
+            background: transparent;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .float-hexagon.blue {
+            border-color: rgba(30, 144, 255, 0.3);
+            box-shadow: 0 0 10px rgba(30, 144, 255, 0.3);
+        }
+        .float-hexagon.purple {
+            border-color: rgba(124, 124, 255, 0.3);
+            box-shadow: 0 0 10px rgba(124, 124, 255, 0.3);
+        }
+
+        /* Tech Particle (Small Dot) */
+        .float-particle {
+            background: radial-gradient(circle at 30% 30%, rgba(0, 240, 255, 0.6), rgba(0, 240, 255, 0.1));
+            border: none;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+        }
+
+        .float-particle.blue {
+            background: radial-gradient(circle at 30% 30%, rgba(30, 144, 255, 0.6), rgba(30, 144, 255, 0.1));
+            box-shadow: 0 0 8px rgba(30, 144, 255, 0.5);
+        }
+        .float-particle.purple {
+            background: radial-gradient(circle at 30% 30%, rgba(124, 124, 255, 0.6), rgba(124, 124, 255, 0.1));
+            box-shadow: 0 0 8px rgba(124, 124, 255, 0.5);
+        }
+
+        /* Digital Node (Square-ish) */
+        .float-node {
+            border-radius: 2px;
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.25), inset 0 0 8px rgba(0, 240, 255, 0.05);
+        }
+
+        .float-node.blue {
+            background: rgba(30, 144, 255, 0.15);
+            border-color: rgba(30, 144, 255, 0.3);
+            box-shadow: 0 0 10px rgba(30, 144, 255, 0.25), inset 0 0 8px rgba(30, 144, 255, 0.05);
+        }
+        .float-node.purple {
+            background: rgba(124, 124, 255, 0.15);
+            border-color: rgba(124, 124, 255, 0.3);
+            box-shadow: 0 0 10px rgba(124, 124, 255, 0.25), inset 0 0 8px rgba(124, 124, 255, 0.05);
+        }
+
+        /* Float up animations - various speeds and drifts */
+        @keyframes float-up-1 {
+            0% { 
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0.5);
+            }
+            10% { 
+                opacity: 0.25;
+            }
+            50% { 
+                opacity: 0.3;
+                transform: translateY(50vh) translateX(20px) scale(1);
+            }
+            90% { 
+                opacity: 0.15;
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100vh) translateX(40px) scale(0.8);
+            }
+        }
+
+        @keyframes float-up-2 {
+            0% { 
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0.6);
+            }
+            10% { 
+                opacity: 0.28;
+            }
+            50% { 
+                opacity: 0.32;
+                transform: translateY(50vh) translateX(-30px) scale(1);
+            }
+            90% { 
+                opacity: 0.12;
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100vh) translateX(-50px) scale(0.7);
+            }
+        }
+
+        @keyframes float-up-3 {
+            0% { 
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0.5);
+            }
+            10% { 
+                opacity: 0.26;
+            }
+            50% { 
+                opacity: 0.28;
+                transform: translateY(50vh) translateX(15px) scale(1);
+            }
+            90% { 
+                opacity: 0.14;
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100vh) translateX(35px) scale(0.75);
+            }
+        }
+
+        @keyframes float-up-4 {
+            0% { 
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0.55);
+            }
+            10% { 
+                opacity: 0.29;
+            }
+            50% { 
+                opacity: 0.3;
+                transform: translateY(50vh) translateX(-25px) scale(1);
+            }
+            90% { 
+                opacity: 0.13;
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100vh) translateX(-45px) scale(0.78);
+            }
+        }
+
+        @keyframes float-up-5 {
+            0% { 
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0.52);
+            }
+            10% { 
+                opacity: 0.27;
+            }
+            50% { 
+                opacity: 0.31;
+                transform: translateY(50vh) translateX(25px) scale(1);
+            }
+            90% { 
+                opacity: 0.15;
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100vh) translateX(50px) scale(0.72);
+            }
+        }
+
+        @keyframes float-up-6 {
+            0% { 
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0.58);
+            }
+            10% { 
+                opacity: 0.24;
+            }
+            50% { 
+                opacity: 0.29;
+                transform: translateY(50vh) translateX(-35px) scale(1);
+            }
+            90% { 
+                opacity: 0.11;
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100vh) translateX(-55px) scale(0.7);
+            }
+        }
+
+        /* Specific element animation assignments */
+        .floating-element:nth-child(1) { animation: float-up-1 18s ease-in-out infinite; }
+        .floating-element:nth-child(2) { animation: float-up-2 22s ease-in-out infinite; }
+        .floating-element:nth-child(3) { animation: float-up-3 16s ease-in-out infinite; }
+        .floating-element:nth-child(4) { animation: float-up-4 20s ease-in-out infinite; }
+        .floating-element:nth-child(5) { animation: float-up-5 24s ease-in-out infinite; }
+        .floating-element:nth-child(6) { animation: float-up-6 19s ease-in-out infinite; }
+        .floating-element:nth-child(7) { animation: float-up-1 21s ease-in-out infinite; }
+        .floating-element:nth-child(8) { animation: float-up-2 17s ease-in-out infinite; }
+        .floating-element:nth-child(9) { animation: float-up-3 23s ease-in-out infinite; }
+        .floating-element:nth-child(10) { animation: float-up-4 19s ease-in-out infinite; }
+        .floating-element:nth-child(11) { animation: float-up-5 18s ease-in-out infinite; }
+        .floating-element:nth-child(12) { animation: float-up-6 25s ease-in-out infinite; }
+
+        /* Mobile responsiveness - reduce floating elements on small screens */
+        @media (max-width: 768px) {
+            .floating-element:nth-child(n+7) {
+                display: none;
+            }
+        }
+
         /* ---- Floating Geometric Shapes (Circuit Elements) ---- */
         .geo-shape {
             position: absolute;
@@ -2352,6 +2612,25 @@
         <!-- Orbit 4 (560px diameter) -->
         <div class="orbit orbit-4"></div>
         <div class="planet planet-4" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+    </div>
+
+    <!-- Floating Robotic UI Elements -->
+    <div class="floating-elements">
+        <!-- Glowing circles -->
+        <div class="floating-element float-circle cyan" style="width: 35px; height: 35px; left: 15%; bottom: -50px;"></div>
+        <div class="floating-element float-circle blue" style="width: 28px; height: 28px; left: 25%; bottom: -50px;"></div>
+        <div class="floating-element float-ring cyan" style="width: 42px; height: 42px; left: 45%; bottom: -50px;"></div>
+        <div class="floating-element float-hexagon blue" style="left: 65%; bottom: -50px;"></div>
+        <div class="floating-element float-particle purple" style="width: 12px; height: 12px; left: 80%; bottom: -50px;"></div>
+        <div class="floating-element float-node cyan" style="width: 24px; height: 24px; left: 35%; bottom: -50px;"></div>
+        
+        <!-- More elements for second wave -->
+        <div class="floating-element float-circle purple" style="width: 32px; height: 32px; left: 10%; bottom: -50px;"></div>
+        <div class="floating-element float-ring blue" style="width: 38px; height: 38px; left: 55%; bottom: -50px;"></div>
+        <div class="floating-element float-hexagon purple" style="left: 75%; bottom: -50px;"></div>
+        <div class="floating-element float-circle cyan" style="width: 26px; height: 26px; left: 40%; bottom: -50px;"></div>
+        <div class="floating-element float-particle blue" style="width: 10px; height: 10px; left: 70%; bottom: -50px;"></div>
+        <div class="floating-element float-node purple" style="width: 20px; height: 20px; left: 20%; bottom: -50px;"></div>
     </div>
 
     <nav>
