@@ -1005,6 +1005,22 @@ AFRAME.registerComponent('lotus-bob',{
 <a-entity id="rig" position="0 1.6 -42">
   <a-entity id="cam" camera look-controls wasd-controls="acceleration:18"></a-entity>
 </a-entity>
+<a-entity id="rig" position="9.5 0 -32.6" movement-controls="fly: false; speed: 0.15">
+
+            <!-- Head / camera -->
+            <a-entity id="head" camera look-controls wasd-controls="enabled: true" position="0 1.6 0">
+            </a-entity>
+
+            <!-- Left hand controller (no custom movement yet) -->
+            <a-entity id="leftHand" oculus-touch-controls="hand: left">
+            </a-entity>
+
+            <!-- Right hand controller (thumbstick drives movement) -->
+            <a-entity id="rightHand" oculus-touch-controls="hand: right" thumbstick-move="speed: 3">
+            </a-entity>
+        </a-entity>
+
+
 
 </a-scene>
 </body>
