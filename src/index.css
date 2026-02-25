@@ -1,0 +1,157 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg-dark text-gray-200 font-body overflow-x-hidden;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply backdrop-blur-md bg-white/5 border border-white/10 rounded-xl;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-xl bg-black/30 border border-white/5 rounded-xl;
+  }
+
+  .neon-glow {
+    @apply shadow-glow-md;
+  }
+
+  .neon-text {
+    @apply text-neon-cyan drop-shadow-[0_0_10px_rgba(0,240,255,0.5)];
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-neon-cyan via-purple-400 to-soft-pink bg-clip-text text-transparent;
+  }
+
+  .button-glow {
+    @apply relative px-6 py-3 font-semibold rounded-lg border border-neon-cyan/50 bg-black/40 text-neon-cyan
+           hover:shadow-glow-lg hover:border-neon-cyan transition-all duration-300
+           hover:bg-neon-cyan/10;
+  }
+
+  .button-glow-pink {
+    @apply relative px-6 py-3 font-semibold rounded-lg border border-soft-pink/50 bg-black/40 text-soft-pink
+           hover:shadow-glow-pink hover:border-soft-pink transition-all duration-300
+           hover:bg-soft-pink/10;
+  }
+
+  .card-hover {
+    @apply transition-all duration-500 hover:scale-105 hover:shadow-glow-lg;
+  }
+}
+
+/* Particle background */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.4), transparent 70%);
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+/* Smooth scrolling */
+@supports (scroll-behavior: smooth) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(11, 18, 32, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.6);
+}
+
+/* Glassmorphism effects */
+.glass-effect {
+  background: rgba(11, 18, 32, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+}
+
+.glass-effect-dark {
+  background: rgba(6, 9, 15, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+/* Neon effects */
+.neon-border {
+  border: 2px solid rgba(0, 240, 255, 0.3);
+  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1), 0 0 20px rgba(0, 240, 255, 0.2);
+}
+
+.neon-border-pink {
+  border: 2px solid rgba(255, 126, 182, 0.3);
+  box-shadow: inset 0 0 10px rgba(255, 126, 182, 0.1), 0 0 20px rgba(255, 126, 182, 0.2);
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  25% {
+    transform: translateY(-20px) translateX(5px);
+  }
+  50% {
+    transform: translateY(-40px) translateX(-5px);
+  }
+  75% {
+    transform: translateY(-20px) translateX(5px);
+  }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.8), inset 0 0 20px rgba(0, 240, 255, 0.2);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Text glow animation */
+@keyframes text-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4), 0 0 20px rgba(0, 240, 255, 0.2);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.8), 0 0 30px rgba(0, 240, 255, 0.4);
+  }
+}
+
+.text-glow {
+  animation: text-glow 3s ease-in-out infinite;
+}
