@@ -1,0 +1,17 @@
+[    6704ms] [WARNING] THREE.GLTFLoader: Unknown extension "KHR_materials_pbrSpecularGlossiness". @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[    6739ms] [WARNING] THREE.GLTFLoader: Unknown extension "KHR_materials_pbrSpecularGlossiness". @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[    6768ms] [WARNING] THREE.GLTFLoader: Unknown extension "KHR_materials_pbrSpecularGlossiness". @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[    6796ms] [WARNING] THREE.GLTFLoader: Unknown extension "KHR_materials_pbrSpecularGlossiness". @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[   58792ms] [ERROR] THREE.WebGLProgram: Shader Error 0 - VALIDATE_STATUS false
+
+Material Name: l_eye
+Material Type: MeshBasicMaterial
+
+Program Info Log: 
+
+ @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[   58798ms] [WARNING] WebGL: INVALID_OPERATION: useProgram: program not valid @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[   58957ms] [WARNING] WebGL: INVALID_OPERATION: useProgram: program not valid @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[   58993ms] [WARNING] WebGL: INVALID_OPERATION: useProgram: program not valid @ https://aframe.io/releases/1.7.1/aframe.min.js:0
+[   60724ms] [WARNING] WebGL: CONTEXT_LOST_WEBGL: loseContext: context lost @ http://localhost:8080/:0
+[  240828ms] [WARNING] WebGL: CONTEXT_LOST_WEBGL: loseContext: context lost @ http://localhost:8080/:0

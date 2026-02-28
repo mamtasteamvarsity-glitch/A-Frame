@@ -155,7 +155,13 @@
             jumpForce:      { type: 'number', default: 8 },
             playerHeight:   { type: 'number', default: 1.6 },
             maxStepHeight:  { type: 'number', default: 0.6 },
-            playerRadius:   { type: 'number', default: 0.4 }
+            playerRadius:   { type: 'number', default: 0.4 },
+            // World boundary (matches ground plane: center 0,-5,-53  size 150x100)
+            boundMinX:      { type: 'number', default: -73 },
+            boundMaxX:      { type: 'number', default: 73 },
+            boundMinZ:      { type: 'number', default: -101 },
+            boundMaxZ:      { type: 'number', default: -5 },
+            boundMinY:      { type: 'number', default: -10 }   // fall safety net
         },
 
         init: function () {
@@ -169,9 +175,24 @@
             this._prevPos = new THREE.Vector3();
             this._tmpVec  = new THREE.Vector3();
 
-            // Jump key
+            // Jump key (keyboard)
             this._onKeyDown = this._onKeyDown.bind(this);
             window.addEventListener('keydown', this._onKeyDown);
+
+            // Jump from Quest 3S controllers (A button on right, X button on left)
+            this._onControllerJump = () => {
+                if (this.isGrounded) {
+                    this.velocityY = this.data.jumpForce;
+                    this.isGrounded = false;
+                }
+            };
+            // Listen once controllers are connected
+            this.el.sceneEl.addEventListener('loaded', () => {
+                const leftHand  = document.querySelector('#leftHand');
+                const rightHand = document.querySelector('#rightHand');
+                if (leftHand)  leftHand.addEventListener('xbuttondown', this._onControllerJump);
+                if (rightHand) rightHand.addEventListener('abuttondown', this._onControllerJump);
+            });
 
             // Gather collidable meshes once models are loaded
             this._gatherTimer = null;
@@ -256,6 +277,13 @@
             this._prevPos.copy(pos);
         },
 
+        /* tock runs AFTER all component ticks (including movement-controls)
+           so boundary clamping can't be overridden */
+        tock: function () {
+            if (this.groundMeshes.length === 0) return;
+            this._clampBounds(this.el.object3D.position);
+        },
+
         /* Cast a ray straight down; snap to nearest walkable surface */
         _checkGround: function (pos) {
             var origin = this._tmpVec;
@@ -337,8 +365,27 @@
             }
         },
 
+        /* Clamp player inside world boundaries */
+        _clampBounds: function (pos) {
+            var d = this.data;
+            if (pos.x < d.boundMinX) pos.x = d.boundMinX;
+            if (pos.x > d.boundMaxX) pos.x = d.boundMaxX;
+            if (pos.z < d.boundMinZ) pos.z = d.boundMinZ;
+            if (pos.z > d.boundMaxZ) pos.z = d.boundMaxZ;
+            // Safety net: if player somehow falls below the world
+            if (pos.y < d.boundMinY) {
+                pos.y = -5;          // reset to ground level
+                this.velocityY = 0;
+                this.isGrounded = true;
+            }
+        },
+
         remove: function () {
             window.removeEventListener('keydown', this._onKeyDown);
+            var leftHand  = document.querySelector('#leftHand');
+            var rightHand = document.querySelector('#rightHand');
+            if (leftHand)  leftHand.removeEventListener('xbuttondown', this._onControllerJump);
+            if (rightHand) rightHand.removeEventListener('abuttondown', this._onControllerJump);
         }
     });
 </script>
@@ -398,9 +445,9 @@
             vegetation-jiggle="intensity: 0.06; speed: 2; radius: 4">
         </a-entity>
 
-        <a-entity gltf-model="#flower" position="-42.12468 27.34883 -40.98534"
-            rotation="2.2992796318599935 -119.78083777666451 -173.58902319078553" scale="3.52006 4.41191 4.79697"
-            dynamic-body="mass:1;" vegetation-jiggle="intensity: 0.12; speed: 3.5; radius: 5">
+        <a-entity gltf-model="#flower" position="-42.12468 -4.5 -40.98534"
+            rotation="0 -119.78 0" scale="0.8 0.8 0.8"
+            vegetation-jiggle="intensity: 0.12; speed: 3.5; radius: 5">
         </a-entity>
 
         <a-entity id="stones_and_grass" data-collision="none">
@@ -425,20 +472,27 @@
         </a-sky>
 
         <!-- ⭐ HYBRID CAMERA RIG ⭐ -->
-        <!-- movement-controls: keyboard (WASD), gamepad, etc. -->
+        <!-- movement-controls: keyboard (WASD) + Quest thumbstick + gamepad -->
         <a-entity id="rig" position="9.5 0 -32.6" movement-controls="fly: false; speed: 0.15"
                   player-physics="gravity: -20; jumpForce: 8; maxStepHeight: 0.6; playerRadius: 0.4">
 
-            <!-- Head / camera (wasd handled by movement-controls on rig) -->
-            <a-entity id="head" camera look-controls position="0 1.6 0">
+            <!-- Head / camera -->
+            <a-entity id="head" camera look-controls="pointerLockEnabled: true" position="0 1.6 0">
             </a-entity>
 
-            <!-- Left hand controller (no custom movement yet) -->
-            <a-entity id="leftHand" oculus-touch-controls="hand: left">
+            <!-- Left hand: Quest 3S controller (X button = jump, thumbstick = snap turn) -->
+            <a-entity id="leftHand"
+                      oculus-touch-controls="hand: left; model: true"
+                      laser-controls="hand: left; model: false"
+                      raycaster="objects: .clickable; far: 5">
             </a-entity>
 
-            <!-- Right hand controller (thumbstick drives movement) -->
-            <a-entity id="rightHand" oculus-touch-controls="hand: right" thumbstick-move="speed: 3">
+            <!-- Right hand: Quest 3S controller (A button = jump, thumbstick = move) -->
+            <a-entity id="rightHand"
+                      oculus-touch-controls="hand: right; model: true"
+                      laser-controls="hand: right; model: false"
+                      raycaster="objects: .clickable; far: 5"
+                      thumbstick-move="speed: 3">
             </a-entity>
         </a-entity>
 
@@ -493,13 +547,15 @@
                 item.setAttribute('vegetation-jiggle', 'intensity: 0.06; speed: 2; radius: 8');
                 stonesAndGrass.appendChild(item);
             }
+            // Flowers placed on ground (Y = -4.8, matching ground level)
             for (let i = 0; i < 100; i++) {
                 const item = document.createElement('a-entity');
                 item.setAttribute('gltf-model', '#flower');
-                const X = Math.random() * 100 - 50;
-                const Z = Math.random() * 100 - 50;
-                item.setAttribute('position', `${X} 27 ${Z}`);
-                item.setAttribute('dynamic-body', 'mass:1;');
+                const fx = Math.random() * 130 - 65;  // spread within boundary
+                const fz = -5 - Math.random() * 93;   // Z: -5 to -98 (within boundary)
+                item.setAttribute('position', `${fx} -4.8 ${fz}`);
+                item.setAttribute('scale', '0.5 0.5 0.5');
+                item.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
                 item.setAttribute('vegetation-jiggle', 'intensity: 0.15; speed: 3; radius: 5');
                 randomFlowers.appendChild(item);
             }
